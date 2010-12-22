@@ -1,0 +1,241 @@
+README
+ssterm - Version 1.1 - 2009/11/22
+Vanya A. Sergeev - <vsergeev@gmail.com>
+================================================================================
+Table of Contents
+
+1. ABOUT ssterm
+2. LICENSE
+3. COMPILING ssterm
+4. USING ssterm
+5. Shortcomings
+6. Example Usage
+================================================================================
+
+1. ABOUT ssterm
+================================================================================
+ssterm, or simple serial-port terminal, is a console-based serial port terminal
+with curses and stdin/stdout user interfaces.
+
+ssterm features several useful formatting options:
+	- hexadecimal representation
+		- newline interpretation
+		- newline character color coding
+	- choice of transmit newline character mapping (i.e. LF -> CRLF)
+	- choice of receive newline characters mapping (i.e. CR -> LF)
+	- buffer scroll in curses interface
+	- buffer dump in curses interface
+	- local character echo
+
+The curses interface is the more interactive user interface. It allows
+scrolling through the receive buffer, dumping the receive buffer, as well as
+dynamically toggling the formatting options mentioned above. The stdin/stdout
+interface is more suitable for situations where data needs to be piped to/from 
+ssterm (such as data logging).
+
+In the curses interface, ssterm's transmit and receive handlers are threaded 
+with pthreads. The stdin/stdout interface uses select() for receiving data from
+the serial port and stdin.
+
+ssterm should work on most *nix platforms, as well as a Cygwin environment.
+ssterm was written by Vanya A. Sergeev, and tested with the  GNU C Compiler on 
+Linux. Feel free to send any bugs!, ideas, or suggestions to vsergeev@gmail.com.
+
+
+2. LICENSE
+================================================================================
+ssterm is released under the GNU General Public License.
+    You should have received a copy of the GNU General Public License
+    along with this program; see the file "COPYING".  If not, visit
+    http://www.gnu.org or write to the Free Software Foundation, Inc.,
+    59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+3. COMPILING ssterm 
+================================================================================
+Running
+$ make
+ in the ssterm project directory should compile ssterm on most *nix systems, 
+including a Cygwin environment. The Makefile is configured to use GCC to 
+compile ssterm. ssterm should have no problem being compiled with "gmake".
+
+$ make install
+ will install ssterm into /usr/local/bin/.
+
+$ make uninstall
+ will remove ssterm from /usr/local/bin/.
+
+ssterm requires pthread and ncurses header files and libraries for compilation.
+
+4. USING ssterm
+================================================================================
+
+By default, ssterm will open the specified serial port with 9600 baudrate, 
+8 data bits, no parity, 1 stop bit, and no flow control. These settings can be 
+adjusted with the baudrate, databits, parity, stopbits, and flow-control
+options.
+
+The curses interface is selected by default. The stdin/stdout interface can
+be enabled with the -s option. This interface mode allows for data to be piped 
+to and from ssterm.
+
+The newline characters that are transmitted and interpreted on reception can
+be specified with the tx-nl and rx-nl options. These options were created
+to accomodate working with the serial port on LF based systems. They can be
+disabled by selecting raw mode in both tx-nl and rx-nl options.
+
+The following receive newline character settings are available:
+	* raw - no re-interpretation of received newline characters
+	* none - dismisses any received newline characters
+	* cr - maps received CR to LF, received LF are ignored
+	* lf - maps received LF to LF, received CR are ignored
+	* crlf - maps received CRLF to LF, otherwise out-of-sequence newline
+	   characters are ignored
+
+Similarly, the transmit newline character settings consist of:
+	* raw - no re-interpretation of transmitted newline characters
+	* none - omits newline characters on transmit
+	* cr - maps LF to CR on transmit
+	* lf - maps LF to LF on transmit
+	* crlf - maps LF to CRLF on transmit
+
+The LF setting is default for both tx-nl and rx-nl.
+
+Additional settings include hexadecimal instead of ASCII representation of the
+data with the hex option, newline interpretation in hexadecimal mode with the 
+hex-nl option, and local character echo with the echo option. These options
+are off by default.
+
+=================
+Curses Mode
+=================
+Running ssterm with the serial port device path and no additional options will
+open the serial port at 9600 baudrate, 8 data bits, no parity, and 1 stop bit
+with the curses interface. The curses interface supports several options to make
+analysis of received data easier.
+
+Ctrl-h enables hexadecimal representation mode: all data will be presented in 
+hexadecimal form instead of ASCII.
+Ctrl-n enables newline recognition in hexadecimal mode, so data is not only
+presented in hexadecimal form, but also separated at the newline markers.
+Ctrl-o enables newline character color coding, so that CR characters will be
+highlighted with magenta, and LF characters will be highlighted with cyan.
+
+Up/Down Arrow keys, Page Up/Page Down, and Home/End facilitate scrolling through
+the buffer.
+
+Ctrl-l clears the buffer.
+Ctrl-r refreshes the screen and reprints the current buffer.
+
+Ctrl-d dumps the current buffer to a file in the local directory, with a 
+filename ranging from ssterm-dump-00 to ssterm-dump-99.
+
+Ctrl-q/Ctrl-s sends the XON/XOFF control character if software flow-control is
+required.
+
+=================
+
+Additional usage information from the program's command line options is provided
+ below.
+
+Usage: ./ssterm <option(s)> <serial port>
+
+ Interface Options:
+  -s, --stdin			Use an stdin/stdout interface as opposed to 
+				curses 
+
+ Serial Port Options:
+  -b, --baudrate <rate>		Specify the baudrate
+  -d, --databits <number>	Specify the number of data bits [5,6,7,8]
+  -p, --parity <type>	 	Specify the parity [none, odd, even]
+  -t, --stopbits <number>	Specify number of stop bits [1,2]
+  -f, --flow-control <type>	Specify the flow-control [none, rtscts, xonxoff]
+
+ Formatting Options:
+  --tx-nl <combination>		Specify the transmit newline combination
+				 [raw, none, cr, lf, crlf]
+  --rx-nl <combination>		Specify the receive newline combination
+				 [raw, none, cr, lf, crlf]
+  -e, --echo			Turn on local character echo
+  -x, --hex			Turn on hexadecimal representation mode
+  --hex-nl			Turn on newlines in hexadecimal mode
+
+ Curses Formatting Options:
+  -c, --rx-nl-color		Color-code all receive newline combinations
+
+ Misc. Options:
+  --buffer-size <bytes>		Specify the size of ssterm's receive buffer
+  -h, --help			Display this usage/help
+  -k, --commands		Display curses commands
+  -v, --version			Display the program's version
+
+Default options: curses, 9600, 8N1, flow control: none, transmit: LF,
+receive: LF, echo: off, hex: off, receive color-code: off, buffer size: 4096
+
+Curses Commands for ssterm:
+ Page Up/Page Down	Scroll buffer up/down by 5 lines
+ Home/End		Scroll to the top/bottom of the buffer
+ Up/Down		Scroll buffer up/down by 1 line
+
+ Ctrl-l			Clear buffer
+ Ctrl-r			Reprint buffer
+ Ctrl-d			Dump buffer to file
+
+ Ctrl-h			Hexadecimal representation mode
+ Ctrl-n			Interpret newlines in hexadecimal mode
+ Ctrl-o			Color-code newline characters in hexadecimal
+			mode
+
+ Ctrl-q			Send XON
+ Ctrl-s			Send XOFF
+
+
+If you encounter any program bugs or problems, please notify the program
+author by email: Vanya A. Sergeev - <vsergeev@gmail.com>.
+
+5. Shortcomings
+================================================================================
+
+This version of ssterm does not support file-based configuration. However, this
+feature is planned for the next release.
+
+ssterm does not support printing raw receive newline characters in curses 
+interface (curses interprets a CR character literally and deletes any line just
+written to the screen). There may be a work-around for this in a future release
+(such as a color-coded blank character). The stdin/stdout interface, however, 
+does support raw receive newline characters.
+
+In addition, the curses interface of ssterm does not currently support custom
+color-coded characters (only newline characters), transmitting special control
+characters outside of XON and XOFF, or manual manipulation of the serial port's
+control lines. These features may be available in upcoming releases.
+
+6. Example Usage
+================================================================================
+
+ssterm with stdin/stdout interface (useful for datalogging):
+$ ssterm -s /dev/ttyUSB0 > nmea_data.txt
+
+ssterm (curses) with hexadecimal representation mode, and newline character
+color-coding:
+$ ssterm -xc /dev/ttyUSB0
+
+ssterm (curses) with specified serial port settings (115200 baudrate, odd parity
+2 stop bits), 8 data bits are default/implied:
+$ ssterm -b 115200 -p odd -t 2
+
+ssterm (curses) with CRLF for transmitted newlines, but just LF for received 
+newlines:
+$ ssterm --tx-nl crlf --rx-nl lf /dev/ttyUSB0
+
+ssterm (stdin/stdout) with hexadecimal representation mode:
+$ ssterm -s -x /dev/ttyUSB0
+24 47 50 47 47 41 2C 30 38 32 38 33 30 2E 38 32 31 2C 2C 2C 2C 2C 30 2C 30 30 2C
+2C 2C 4D 2C 30 2E 30 2C 4D 2C 2C 30 30 30 30 2A 35 43 0D 0A 24 47 50 47 53 41 2C
+41 2C 31 2C 2C 2C 2C 2C 2C 2C 2C 2C 2C 2C 2C 2C 2C 2C 2A 31 45 0D 0A 24 47 50 52
+4D 43 2C 30 38 32 38 33 30 2E 38 32 31 2C 56 2C 2C 2C 2C 2C 2C 2C 32 36 31 30 30
+39 2C 2C 2A 32 39 0D 0A 24 47 50 47 47 41 2C 30 38 32 38 33 31 2E 38 31 34 2C 2C
+2C 2C 2C 30 2C 30 30 2C 2C 2C 4D 2C 30 2E 30 2C 4D 2C 2C 30 30 30 30 2A 35 42 0D
+0A 24 47 50 47 53 41 2C 41 2C 31 2C 2C 2C 2C 2C 2C 2C 2C 2C 2C 2C 2C 2C 2C 2C 2A
+31 45 0D 0A 24 47 50 52 4D 43 2C 30 38 32 38 33 31 2E 38 31 34 2C 56 2C 2C 2C 2C
+2C 2C 2C 32 36 31 30 30 39 2C 2C 2A 32 45 0D 0A 24 47 50 47 47 41 2C 30 38
+

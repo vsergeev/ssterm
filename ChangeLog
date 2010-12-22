@@ -1,0 +1,6 @@
+Version 1.1 - 2009/11/26
+	* CRITICAL FIX: Serial port was not being opened in non-blocking mode, 
+	  preventing ssterm from working in some situations. This has been 
+	  fixed.
+Version 1.0 - 2009/10/26
+	* Initial release.
