@@ -1050,7 +1050,7 @@ static struct option long_options[] = {
 };
 
 static void printVersion(FILE *stream) {
-	fprintf(stream, "ssterm version 1.0 - 2009/10/23\n");
+	fprintf(stream, "ssterm version 1.1 - 11/12/2009\n");
 	fprintf(stream, "Written by Vanya Sergeev - <vsergeev@gmail.com>\n");
 }
 	
