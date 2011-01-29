@@ -1,6 +1,6 @@
 /* 
  * ssterm - simple serial-port terminal.
- * Version 1.1 - 2009/11
+ * Version 1.2 - January 2011
  * Written by Vanya A. Sergeev - <vsergeev@gmail.com>
  *
  * Copyright (C) 2009 Vanya A. Sergeev
@@ -42,11 +42,10 @@
 	* write file configuration backend
 	* custom color coded characters?
 
-	* lock file support?
 	* fixed pad, redraw buffer window each time?
 	
-	* sending control characters
-	* setting control lines
+	* sending control characters?
+	* setting control lines?
 */
 
 /******************************************************************************
@@ -147,7 +146,9 @@ int tty_buffer_wrap;
 /* read thread */
 pthread_t read_thread;
 /* signaling variable to read thread */
-int read_thread_signal;
+int rth_signal = 0;
+/* mutex for signaling variable to read thread */
+pthread_mutex_t rth_signal_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* curses window and coordinates */
 WINDOW *screen_pad;
@@ -162,6 +163,8 @@ short screen_color_coded_colors[] = {COLOR_MAGENTA, COLOR_CYAN};
 
 /* options variable for different UI functionality */
 int ui_options;
+/* mutex for accessing ui_options in read thread */
+pthread_mutex_t ui_options_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /******************************************************************************
  ******************************************************************************
@@ -205,7 +208,9 @@ void handler_sigint(int signal) {
 	/* Clean up curses */
 	screen_cleanup();
 	/* Tell our read thread to exit */
-	read_thread_signal |= SIGNAL_RTH_EXIT;
+	pthread_mutex_lock(&rth_signal_mutex);
+	rth_signal |= SIGNAL_RTH_EXIT;
+	pthread_mutex_unlock(&rth_signal_mutex);
 	/* Join our read thread to this thread */
 	pthread_join(read_thread, NULL);
 	/* Make sure all of our pthreads have terminaed */
@@ -522,15 +527,20 @@ void screen_scroll_down(int lines) {
 
 void screen_update(int index_1, int index_2) {
 	int screen_index;
+	int ui_options_copy;
 	int i = 0;
 	int cursor_y, cursor_x;
 	int found_cr = 0;
 
+	pthread_mutex_lock(&ui_options_mutex);
+	ui_options_copy = ui_options;
+	pthread_mutex_unlock(&ui_options_mutex);
+
 	/* Print the characters from specified index_1 to index_2 of the tty 
 	 * buffer */
 	for (screen_index = index_1; screen_index < index_2; screen_index++) {
-		if (ui_options & UI_OPTION_HEX) {
-			if (ui_options & UI_OPTION_COLOR_CODED) {
+		if (ui_options_copy & UI_OPTION_HEX) {
+			if (ui_options_copy & UI_OPTION_COLOR_CODED) {
 				/* Check if this character matches a color
 				 * coded character */
 				for (i = 0; i < sizeof(screen_color_coded_chars); i++) {
@@ -551,7 +561,7 @@ void screen_update(int index_1, int index_2) {
 				wattron(screen_pad, COLOR_PAIR(0));
 			}
 
-			if (ui_options & UI_OPTION_HEX_NEWLINE) {
+			if (ui_options_copy & UI_OPTION_HEX_NEWLINE) {
 			/* Print a newline if we encountered one, otherwise
 			 * just a space to separate hex characters */
 				if (tty_buffer[screen_index] == '\r') {
@@ -627,7 +637,9 @@ void screen_update(int index_1, int index_2) {
 		getyx(screen_pad, cursor_y, cursor_x);
 		/* If we've reached the end of our pad, refresh the screen */
 		if (cursor_y == tty_buffer_size-1) {
-			read_thread_signal |= SIGNAL_RTH_SCREEN_REFRESH;
+			pthread_mutex_lock(&rth_signal_mutex);
+			rth_signal |= SIGNAL_RTH_SCREEN_REFRESH;
+			pthread_mutex_unlock(&rth_signal_mutex);
 		} else {
 			/* Only scroll down if we're looking at the end of the
 			 * buffer */
@@ -743,19 +755,25 @@ void stdout_print(void) {
 
 void *read_curses_loop(void *id) {
 	int retVal;
+	int rth_signal_copy;
 	fd_set rfds;
 	struct timeval tv;
 
-	read_thread_signal = 0;
 	tty_buffer_clear();
 	while (1) {
+		pthread_mutex_lock(&rth_signal_mutex);
+		rth_signal_copy = rth_signal;
+		pthread_mutex_unlock(&rth_signal_mutex);
+
 		/* If we need to exit */
-		if (read_thread_signal & SIGNAL_RTH_EXIT)
+		if (rth_signal_copy & SIGNAL_RTH_EXIT)
 			break;
 
 		/* If the write thread wants us to clear the tty buffer */
-		if (read_thread_signal & SIGNAL_RTH_BUFFER_CLEAR) {
-			read_thread_signal &= ~SIGNAL_RTH_BUFFER_CLEAR;
+		if (rth_signal_copy & SIGNAL_RTH_BUFFER_CLEAR) {
+			pthread_mutex_lock(&rth_signal_mutex);
+			rth_signal &= ~SIGNAL_RTH_BUFFER_CLEAR;
+			pthread_mutex_unlock(&rth_signal_mutex);
 			/* Clear the tty buffer */
 			tty_buffer_clear();
 			/* Clear the screen pad and reset our screen pad
@@ -765,10 +783,12 @@ void *read_curses_loop(void *id) {
 		}
 
 		/* If the write thread wants us to refresh the screen buffer */
-		if (read_thread_signal & SIGNAL_RTH_SCREEN_REFRESH) {
+		if (rth_signal_copy & SIGNAL_RTH_SCREEN_REFRESH) {
 			int cursor_y, cursor_x;
 
-			read_thread_signal &= ~SIGNAL_RTH_SCREEN_REFRESH;
+			pthread_mutex_lock(&rth_signal_mutex);
+			rth_signal &= ~SIGNAL_RTH_SCREEN_REFRESH;
+			pthread_mutex_unlock(&rth_signal_mutex);
 			/* Clear the screen pad and update our screen pad
 			 * view port to the end of the printed tty buffer */
 			wclear(screen_pad);
@@ -800,8 +820,11 @@ void *read_curses_loop(void *id) {
 		}
 
 		/* If the write thread wants us to dump the tty buffer */
-		if (read_thread_signal & SIGNAL_RTH_BUFFER_DUMP) {
-			read_thread_signal &= ~SIGNAL_RTH_BUFFER_DUMP;
+		if (rth_signal_copy & SIGNAL_RTH_BUFFER_DUMP) {
+			pthread_mutex_lock(&rth_signal_mutex);
+			rth_signal &= ~SIGNAL_RTH_BUFFER_DUMP;
+			pthread_mutex_unlock(&rth_signal_mutex);
+
 			/* Dump the file */
 			retVal = tty_buffer_dump();
 			/* If we had an error, complain, and refresh the screen
@@ -815,7 +838,9 @@ void *read_curses_loop(void *id) {
 				sleep(1);
 				/* Refresh the screen buffer to get rid of the
 				 * above error message */
-				read_thread_signal |= SIGNAL_RTH_SCREEN_REFRESH;
+				pthread_mutex_lock(&rth_signal_mutex);
+				rth_signal |= SIGNAL_RTH_SCREEN_REFRESH;
+				pthread_mutex_unlock(&rth_signal_mutex);
 				continue;
 			}
 		}
@@ -856,9 +881,15 @@ void *read_curses_loop(void *id) {
 
 void write_curses_loop(void) {
 	int ch;
+	int ui_options_copy;
 	unsigned char crlf[2] = {'\r', '\n'};
 
 	while (1) {
+		/* Read the ui options variable */
+		pthread_mutex_lock(&ui_options_mutex);
+		ui_options_copy = ui_options;
+		pthread_mutex_unlock(&ui_options_mutex);
+		
 		ch = wgetch(stdscr);
 		/* Check for special control keys */
 		if (ch == KEY_UP) {
@@ -877,32 +908,38 @@ void write_curses_loop(void) {
 			handler_sigint(SIGINT);
 		} else if (ch == CTRL_H) {
 			/* Toggle the screen hex mode */
-			if (ui_options & UI_OPTION_HEX)
-				ui_options &= ~UI_OPTION_HEX;
+			if (ui_options_copy & UI_OPTION_HEX)
+				ui_options_copy &= ~UI_OPTION_HEX;
 			else
-				ui_options |= UI_OPTION_HEX;
+				ui_options_copy |= UI_OPTION_HEX;
 		} else if (ch == CTRL_N) {
 			/* Toggle interpretation of newlines in hex mode */
-			if (ui_options & UI_OPTION_HEX_NEWLINE)
-				ui_options &= ~UI_OPTION_HEX_NEWLINE;
+			if (ui_options_copy & UI_OPTION_HEX_NEWLINE)
+				ui_options_copy &= ~UI_OPTION_HEX_NEWLINE;
 			else
-				ui_options |= UI_OPTION_HEX_NEWLINE;
+				ui_options_copy |= UI_OPTION_HEX_NEWLINE;
 		} else if (ch == CTRL_O) {
 			/* Toggle the screen color coding mode */
-			if (ui_options & UI_OPTION_COLOR_CODED)
-				ui_options &= ~UI_OPTION_COLOR_CODED;
+			if (ui_options_copy & UI_OPTION_COLOR_CODED)
+				ui_options_copy &= ~UI_OPTION_COLOR_CODED;
 			else
-				ui_options |= UI_OPTION_COLOR_CODED;
+				ui_options_copy |= UI_OPTION_COLOR_CODED;
 		} else if (ch == CTRL_L) {
 			/* Signal to our read thread to clear the tty buffer */
-			read_thread_signal |= SIGNAL_RTH_BUFFER_CLEAR;
+			pthread_mutex_lock(&rth_signal_mutex);
+			rth_signal |= SIGNAL_RTH_BUFFER_CLEAR;
+			pthread_mutex_unlock(&rth_signal_mutex);
 		} else if (ch == CTRL_R) {
 			/* Signal to our read thread to refresh the screen
 			 * buffer. */
-			read_thread_signal |= SIGNAL_RTH_SCREEN_REFRESH;
+			pthread_mutex_lock(&rth_signal_mutex);
+			rth_signal |= SIGNAL_RTH_SCREEN_REFRESH;
+			pthread_mutex_unlock(&rth_signal_mutex);
 		} else if (ch == CTRL_D) {
 			/* Signal to our read thread to dump the tty buffer */
-			read_thread_signal |= SIGNAL_RTH_BUFFER_DUMP;
+			pthread_mutex_lock(&rth_signal_mutex);
+			rth_signal |= SIGNAL_RTH_BUFFER_DUMP;
+			pthread_mutex_unlock(&rth_signal_mutex);
 		} else {
 			/* Otherwise, write out the terminal */
 			
@@ -924,6 +961,11 @@ void write_curses_loop(void) {
 			}	
 			tty_write((unsigned char *)&ch, 1);
 		}
+
+		/* Update the ui options variable */
+		pthread_mutex_lock(&ui_options_mutex);
+		ui_options = ui_options_copy;
+		pthread_mutex_unlock(&ui_options_mutex);
 	}		
 }
 
@@ -1050,7 +1092,7 @@ static struct option long_options[] = {
 };
 
 static void printVersion(FILE *stream) {
-	fprintf(stream, "ssterm version 1.1 - 11/12/2009\n");
+	fprintf(stream, "ssterm version 1.2 - 01/29/2011\n");
 	fprintf(stream, "Written by Vanya Sergeev - <vsergeev@gmail.com>\n");
 }
 	
