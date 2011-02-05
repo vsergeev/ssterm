@@ -1,9 +1,9 @@
 /* 
  * ssterm - simple serial-port terminal.
- * Version 1.2 - January 2011
+ * Version 1.2 - February 2011
  * Written by Vanya A. Sergeev - <vsergeev@gmail.com>
  *
- * Copyright (C) 2009 Vanya A. Sergeev
+ * Copyright (C) 2009-2011 Vanya A. Sergeev
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
@@ -41,9 +41,6 @@
 /* Todo:
 	* write file configuration backend
 	* custom color coded characters?
-
-	* fixed pad, redraw buffer window each time?
-	
 	* sending control characters?
 	* setting control lines?
 */
@@ -1092,7 +1089,7 @@ static struct option long_options[] = {
 };
 
 static void printVersion(FILE *stream) {
-	fprintf(stream, "ssterm version 1.2 - 01/29/2011\n");
+	fprintf(stream, "ssterm version 1.2 - 02/04/2011\n");
 	fprintf(stream, "Written by Vanya Sergeev - <vsergeev@gmail.com>\n");
 }
 	

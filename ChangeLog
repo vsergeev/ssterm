@@ -1,3 +1,6 @@
+Version 1.2 - 02/04/2011
+	* Added safer handling of shared thread variables with mutexes.
+
 Version 1.1 - 11/22/2009
 	* CRITICAL FIX: Serial port was not being opened in non-blocking mode, 
 	  preventing ssterm from working in some situations. This has been 

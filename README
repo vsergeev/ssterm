@@ -1,6 +1,6 @@
 README
-ssterm - Version 1.1 - 11/22/2009
-Vanya A. Sergeev - <vsergeev@gmail.com>
+ssterm - Version 1.2 - 02/04/2011
+Vanya A. Sergeev - vsergeev at gmail
 ================================================================================
 Table of Contents
 
@@ -38,7 +38,7 @@ with pthreads. The stdin/stdout interface uses select() for receiving data from
 the serial port and stdin.
 
 ssterm should work on most *nix platforms, as well as a Cygwin environment.
-ssterm was written by Vanya A. Sergeev, and tested with the  GNU C Compiler on 
+ssterm was written by Vanya A. Sergeev, and tested with the GNU C Compiler on 
 Linux. Feel free to send any bugs!, ideas, or suggestions to vsergeev@gmail.com.
 
 
@@ -117,8 +117,9 @@ Ctrl-h enables hexadecimal representation mode: all data will be presented in
 hexadecimal form instead of ASCII.
 Ctrl-n enables newline recognition in hexadecimal mode, so data is not only
 presented in hexadecimal form, but also separated at the newline markers.
-Ctrl-o enables newline character color coding, so that CR characters will be
-highlighted with magenta, and LF characters will be highlighted with cyan.
+Ctrl-o enables newline character color coding in hexadecimal mode, so that CR
+characters will be highlighted with magenta, and LF characters will be
+highlighted with cyan.
 
 Up/Down Arrow keys, Page Up/Page Down, and Home/End facilitate scrolling through
 the buffer.
@@ -129,7 +130,8 @@ Ctrl-r refreshes the screen and reprints the current buffer.
 Ctrl-d dumps the current buffer to a file in the local directory, with a 
 filename ranging from ssterm-dump-00 to ssterm-dump-99.
 
-Ctrl-q/Ctrl-s sends the XON/XOFF control character if software flow-control is
+Ctrl-q/Ctrl-s sends the XON/XOFF control character (respectively) if software 
+flow-control is
 required.
 
 =================
