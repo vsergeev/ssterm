@@ -1,5 +1,5 @@
 Version 1.2 - 02/04/2011
-	* Added safer handling of shared thread variables with mutexes.
+	* Added mutexes for safer handling of shared variables across threads.
 
 Version 1.1 - 11/22/2009
 	* CRITICAL FIX: Serial port was not being opened in non-blocking mode, 
