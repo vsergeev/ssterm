@@ -3,7 +3,7 @@ CFLAGS = -Wall -O3 -D_GNU_SOURCE
 LDFLAGS = -lncurses -lpthread
 OBJECTS = ssterm.o 
 PROGNAME = ssterm
-BINDIR = /usr/local/bin
+BINDIR = /usr/bin
 
 all: $(PROGNAME)
 
