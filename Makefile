@@ -3,12 +3,13 @@ CFLAGS = -Wall -O3 -D_GNU_SOURCE
 LDFLAGS = -lncurses -lpthread
 OBJECTS = ssterm.o 
 PROGNAME = ssterm
-BINDIR = /usr/bin
+PREFIX = /usr/local
+BINDIR = $(PREFIX)/bin
 
 all: $(PROGNAME)
 
 install: $(PROGNAME)
-	install -m 0755 $(PROGNAME) $(DESTDIR)$(BINDIR)
+	install -D -s -m 0755 $(PROGNAME) $(DESTDIR)$(BINDIR)
 
 $(PROGNAME): $(OBJECTS)
 	$(CC) $(LDFLAGS) -o $@ $(OBJECTS) 
