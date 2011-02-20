@@ -17,5 +17,5 @@ clean:
 	rm -rf $(PROGNAME) $(OBJECTS)
 
 uninstall:
-	rm -f $(BINDIR)/$(PROGNAME)
+	rm -f $(DESTDIR)$(BINDIR)/$(PROGNAME)
 
