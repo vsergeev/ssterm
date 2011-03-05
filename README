@@ -59,10 +59,10 @@ including a Cygwin environment. The Makefile is configured to use GCC to
 compile ssterm. ssterm should have no problem being compiled with "gmake".
 
 $ make install
- will install ssterm into /usr/local/bin/.
+ will install ssterm into /usr/bin/.
 
 $ make uninstall
- will remove ssterm from /usr/local/bin/.
+ will remove ssterm from /usr/bin/.
 
 ssterm requires pthread and ncurses header files and libraries for compilation.
 
