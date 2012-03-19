@@ -358,7 +358,7 @@ Written by Vanya A. Sergeev - <vsergeev@gmail.com>.\n\
 	print "\
 Quit Escape Character:          Ctrl-[\n\
 \n\
-Color Codes (fg/bg):\n\
+Color Code Sequence (fg/bg):\n\
  Black/Red, Black/Green, Black/Yellow, White/Blue, White/Magenta,\n\
  Black/Cyan, Black/White\n\
 \n\

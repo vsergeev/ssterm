@@ -119,7 +119,7 @@ Written by Vanya A. Sergeev - <vsergeev@gmail.com>.
 
 Quit Escape Character:          Ctrl-[
 
-Color Codes (fg/bg):
+Color Code Sequence (fg/bg):
  Black/Red, Black/Green, Black/Yellow, White/Blue, White/Magenta,
  Black/Cyan, Black/White
 
