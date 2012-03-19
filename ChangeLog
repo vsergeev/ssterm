@@ -1,10 +1,15 @@
-Version 1.2 - 02/04/2011
-	* Added mutexes for safer handling of shared variables across threads.
+Release 1.3 - 03/19/2012
+ - Rewrote ssterm to Python2 for ease of future extensibility and
+   maintenance.
+ - Upgraded license from GPLv2 to GPLv3.
 
-Version 1.1 - 11/22/2009
-	* CRITICAL FIX: Serial port was not being opened in non-blocking mode, 
-	  preventing ssterm from working in some situations. This has been 
-	  fixed.
+Release 1.2 - 02/04/2011
+ - Added mutexes for safer handling of shared variables across threads.
 
-Version 1.0 - 10/26/2009
-	* Initial release.
+Release 1.1 - 11/22/2009
+ - CRITICAL FIX: Serial port was not being opened in non-blocking mode,
+   preventing ssterm from working in some situations. This has been
+   fixed.
+
+Release 1.0 - 10/26/2009
+ - Initial release.
