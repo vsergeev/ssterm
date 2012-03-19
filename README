@@ -20,6 +20,7 @@ ssterm features several useful formatting options:
 	- transmit newline character remapping (e.g. LF -> CRLF)
 	- receive newline character remapping (e.g. CR -> LF)
 	- local character echo
+	- color coding particular characters
 
 ssterm is written in Python 2, but should work on most *nix platforms.  Feel
 free to send any bugs, ideas, or suggestions to vsergeev at gmail dot com.
@@ -69,6 +70,13 @@ Similarly, the transmit newline character settings consist of:
 The default receive newline character setting (rx-nl option) is lf.
 The default transmit newline character setting (rx-nl option) is raw.
 
+ssterm can color code particular characters, specified by a comma-delimited
+list with the -c or --color option. The list can contain ASCII entries (e.g.
+a,_,A, ...), as well as hexadecimal entries (e.g. 0x0a,0xff,...). There is
+currently a maximum of seven distinct colors, assigned sequentially to the
+specified characters in the following order: Black/Red, Black/Green,
+Black/Yellow, White/Blue, White/Magenta, Black/Cyan, Black/White.
+
 Additional settings include hexadecimal instead of ASCII representation of the
 data with the hex option, newline interpretation in hexadecimal mode with the
 hex-nl option, and local character echo with the echo option. These options
@@ -92,6 +100,8 @@ Written by Vanya A. Sergeev - <vsergeev@gmail.com>.
   -f, --flow-control <type>     Specify the flow-control [none, rtscts, xonxoff]
 
  Formatting Options:
+  -c, --color <list>            Specify comma-delimited list of characters in
+                                 ASCII or hex to color code: A,$,_,0x0d,0x0a ...
   --tx-nl <substitution>        Specify the transmit newline substitution
                                  [raw, none, cr, lf, crlf]
   --rx-nl <match>               Specify the receive newline combination
@@ -106,10 +116,13 @@ Written by Vanya A. Sergeev - <vsergeev@gmail.com>.
 
 Quit Escape Character:          Ctrl-[
 
+Color Codes (fg/bg):
+ Black/Red, Black/Green, Black/Yellow, White/Blue, White/Magenta,
+ Black/Cyan, Black/White
+
 Default Options:
  baudrate: 9600 | databits: 8 | parity: none | stopbits: 1 | flow control: none
  tx newline: raw | rx newline: lf | local echo: off | hexmode: off
-
 
 4. Example Usage
 ================================================================================
@@ -131,7 +144,7 @@ ssterm with CRLF for transmitted newlines, but just LF for received newlines:
 $ ssterm --tx-nl crlf --rx-nl lf /dev/ttyUSB0
 
 ssterm with hexadecimal representation mode:
-$ ssterm -s -x /dev/ttyUSB0
+$ ssterm -x /dev/ttyUSB0
 24 47 50 47 47 41 2C 30 38 32 38 33 30 2E 38 32  31 2C 2C 2C 2C 2C 30 2C 30 30 2C 2C 2C 4D 2C 30
 2E 30 2C 4D 2C 2C 30 30 30 30 2A 35 43 0D 0A 24  47 50 47 53 41 2C 41 2C 31 2C 2C 2C 2C 2C 2C 2C
 2C 2C 2C 2C 2C 2C 2C 2C 2A 31 45 0D 0A 24 47 50  52 4D 43 2C 30 38 32 38 33 30 2E 38 32 31 2C 56
@@ -141,3 +154,6 @@ $ ssterm -s -x /dev/ttyUSB0
 0A 24 47 50 52 4D 43 2C 30 38 32 38 33 31 2E 38  31 34 2C 56 2C 2C 2C 2C 2C 2C 2C 32 36 31 30 30
 39 2C 2C 2A 32 45 0D 0A 24 47 50 47 47 41 2C 30  38
 
+ssterm with hexadecimal representation mode, newline interpretation, and color
+coding:
+$ ssterm -x --hex-nl -c $,0x0a,0x0d /dev/ttyUSB0

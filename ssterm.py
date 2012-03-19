@@ -29,21 +29,26 @@ import re
 # Default TTY and Formatting Options
 TTY_Options = {'baudrate': 9600, 'databits': 8, 'stopbits': 1, 'parity': "none", 'flowcontrol': "none"}
 Format_Options = {'hexmode': False, 'txnl': "raw", 'rxnl': "lf", 'hexnl': False, 'echo': False}
+Color_Chars = {}
 Console_Newline = os.linesep
+
+# Number of columns in hex mode
+Hexmode_Columns = 32
 
 # ssterm Quit Escape Character, Ctrl-[ = 0x1B
 Quit_Escape_Character = 0x1B
+
+# Default color codes: Black/Red, Black/Green, Black/Yellow, White/Blue,
+#  White/Magenta, Black/Cyan, Black/White
+Color_Codes = ["\x1b[1;30;41m", "\x1b[1;30;42m", "\x1b[1;30;43m", "\x1b[1;37;44m", "\x1b[1;37;45m", "\x1b[1;30;46m", "\x1b[1;30;47m"]
+Color_Code_Reset = "\x1b[0m"
 
 # Valid newline substitution types
 Valid_RX_Newline_Type = ["raw", "cr", "lf", "crlf", "crorlf"]
 Valid_TX_Newline_Type = ["raw", "none", "cr", "lf", "crlf"]
 
 # Read buffer size
-READ_BUFF_SIZE = 1024
-
-# Number of columns in hex mode
-Hexmode_Columns = 32
-
+READ_BUFF_SIZE = 4096
 
 ###########################################################################
 ### TTY Helper Functions
@@ -54,7 +59,7 @@ def serial_open(devpath):
 	try:
 		tty_fd = os.open(devpath, os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK);
 	except OSError, err:
-		sys.stderr.write("Error opening serial port: %s\n" % str(err))
+		sys.stderr.write("Error: opening serial port: %s\n" % str(err))
 		return -1
 
 	# Get the current tty options
@@ -62,13 +67,13 @@ def serial_open(devpath):
 	try:
 		tty_attr = termios.tcgetattr(tty_fd)
 	except termios.TermiosError, err:
-		sys.stderr.write("Error getting serial port options: %s\n" % str(err))
+		sys.stderr.write("Error: getting serial port options: %s\n" % str(err))
 		return -1
 
 	# Look up the termios baudrate and set it in the attributes structure
 	termios_baudrates = {50: termios.B50, 75: termios.B75, 110: termios.B110, 134: termios.B134, 150: termios.B150, 200: termios.B200, 300: termios.B300, 600: termios.B600, 1200: termios.B1200, 1800: termios.B1800, 2400: termios.B2400, 4800: termios.B4800, 9600: termios.B9600, 19200: termios.B19200, 38400: termios.B38400, 57600: termios.B57600, 115200: termios.B115200, 230400: termios.B230400}
 	if (not TTY_Options['baudrate'] in termios_baudrates):
-		sys.stderr.write("Invalid tty baudrate!\n")
+		sys.stderr.write("Error: Invalid tty baudrate!\n")
 		return -1
 	tty_attr[4] = termios_baudrates[TTY_Options['baudrate']]
 	tty_attr[5] = termios_baudrates[TTY_Options['baudrate']]
@@ -87,22 +92,22 @@ def serial_open(devpath):
 
 	# Look up the termios data bits and set it in the attributes structure
 	termios_databits = {5: termios.CS5, 6: termios.CS6, 7: termios.CS7, 8: termios.CS8}
-	if (termios_cflag_map_and_set(termios_databits, TTY_Options['databits'], "Invalid tty databits!\n") < 0):
+	if (termios_cflag_map_and_set(termios_databits, TTY_Options['databits'], "Error: Invalid tty databits!\n") < 0):
 		return -1
 
 	# Look up the termios parity and set it in the attributes structure
 	termios_parity = {"none": 0, "even": termios.PARENB, "odd": termios.PARENB | termios.PARODD}
-	if (termios_cflag_map_and_set(termios_parity, TTY_Options['parity'], "Invalid tty parity!\n") < 0):
+	if (termios_cflag_map_and_set(termios_parity, TTY_Options['parity'], "Error: Invalid tty parity!\n") < 0):
 		return -1
 
 	# Look up the termios stop bits and set it in the attributes structure
 	termios_stopbits = {1: 0, 2: termios.CSTOPB}
-	if (termios_cflag_map_and_set(termios_stopbits, TTY_Options['stopbits'], "Invalid tty stop bits!\n") < 0):
+	if (termios_cflag_map_and_set(termios_stopbits, TTY_Options['stopbits'], "Error: Invalid tty stop bits!\n") < 0):
 		return -1
 
 	# Look up the termios flow control and set it in the attributes structure
 	termios_flowcontrol = {"none": 0, "rtscts": termios.CRTSCTS, "xonxoff": 0}
-	if (termios_cflag_map_and_set(termios_flowcontrol, TTY_Options['flowcontrol'], "Invalid tty flow control!\n") < 0):
+	if (termios_cflag_map_and_set(termios_flowcontrol, TTY_Options['flowcontrol'], "Error: Invalid tty flow control!\n") < 0):
 		return -1
 
 	# Enable the receiver
@@ -129,7 +134,7 @@ def serial_open(devpath):
 	try:
 		termios.tcsetattr(tty_fd, termios.TCSANOW, tty_attr)
 	except termios.TermiosError, err:
-		sys.stderr.write("Error setting serial port options: %s\n" % str(err))
+		sys.stderr.write("Error: setting serial port options: %s\n" % str(err))
 		return -1
 
 	# Return the tty_fd
@@ -178,7 +183,7 @@ def console_init():
 	try:
 		stdin_attr = termios.tcgetattr(stdin_fd)
 	except termios.TermiosError, err:
-		sys.stderr.write("Error getting stdin tty options: %s\n" % str(err))
+		sys.stderr.write("Error: getting stdin tty options: %s\n" % str(err))
 		return -1
 
 	# Disable canonical input, so we can send characters without a
@@ -194,7 +199,7 @@ def console_init():
 	try:
 		termios.tcsetattr(stdin_fd, termios.TCSANOW, stdin_attr)
 	except termios.TermiosError, err:
-		sys.stderr.write("Error setting stdin tty options: %s\n" % str(err))
+		sys.stderr.write("Error: setting stdin tty options: %s\n" % str(err))
 		return -1
 
 	# Re-open stdout in unbuffered mode
@@ -243,7 +248,11 @@ def console_formatted_print(data):
 	# Convert to hex if we're in hex mode
 	if Format_Options['hexmode']:
 		for x in list(data):
-			sys.stdout.write("%02X" % ord(x))
+			# Color code this character if it's in our color chars dictionary
+			if len(Color_Chars) > 0 and ord(x) in Color_Chars:
+				sys.stdout.write(Color_Codes[Color_Chars[ord(x)]] + ("%02X" % ord(x)) + Color_Code_Reset)
+			else:
+				sys.stdout.write("%02X" % ord(x))
 			stdout_cursor_x += 1
 			# Pretty print into two columns
 			if stdout_cursor_x == Hexmode_Columns/2:
@@ -260,7 +269,22 @@ def console_formatted_print(data):
 				stdout_cursor_x = 0
 	# Normal print
 	else:
-		sys.stdout.write(data)
+		# Apply Color coding if necessary
+		if len(Color_Chars) > 0:
+			# Unfortunately, for generality, we can't do a global
+			# regex substitution on data with the color-coded
+			# version, since we could have potentially selected
+			# color code characters that are present in the ANSI
+			# color escape sequences. So we operate on the data
+			# a char at time here.
+			for x in list(data):
+				# Color code this character if it's in our color chars dictionary
+				if ord(x) in Color_Chars:
+					sys.stdout.write(Color_Codes[Color_Chars[ord(x)]] + x + Color_Code_Reset)
+				else:
+					sys.stdout.write(x)
+		else:
+			sys.stdout.write(data)
 
 
 def console_read_write_loop():
@@ -273,7 +297,7 @@ def console_read_write_loop():
 			# Read a buffer from stdin
 			retval, buff = fd_read(stdin_fd, READ_BUFF_SIZE)
 			if retval < 0:
-				sys.stderr.write("Error reading stdin: %s\n" % buff)
+				sys.stderr.write("Error: reading stdin: %s\n" % buff)
 				break
 			if len(buff) > 0:
 				# Perform transmit newline subsitutions if necessary
@@ -288,13 +312,13 @@ def console_read_write_loop():
 				# Write the buffer to the serial port
 				retval = fd_write(serial_fd, buff)
 				if retval < 0:
-					sys.stderr.write("Error writing to serial port: %s\n" % buff)
+					sys.stderr.write("Error: writing to serial port: %s\n" % buff)
 
 		if serial_fd in ready_read_fds:
 			# Read a buffer from stdin
 			retval, buff = fd_read(serial_fd, READ_BUFF_SIZE)
 			if retval < 0:
-				sys.stderr.write("Error reading serial port: %s\n" % buff)
+				sys.stderr.write("Error: reading serial port: %s\n" % buff)
 				break
 			if len(buff) > 0:
 				console_formatted_print(buff)
@@ -318,6 +342,8 @@ Written by Vanya A. Sergeev - <vsergeev@gmail.com>.\n\
   -f, --flow-control <type>     Specify the flow-control [none, rtscts, xonxoff]\n\
 \n\
  Formatting Options:\n\
+  -c, --color <list>            Specify comma-delimited list of characters in\n\
+                                 ASCII or hex to color code: A,$,_,0x0d,0x0a ...\n\
   --tx-nl <substitution>        Specify the transmit newline substitution\n\
                                  [raw, none, cr, lf, crlf]\n\
   --rx-nl <match>               Specify the receive newline combination\n\
@@ -331,6 +357,10 @@ Written by Vanya A. Sergeev - <vsergeev@gmail.com>.\n\
 	print "\
 Quit Escape Character:          Ctrl-[\n\
 \n\
+Color Codes (fg/bg):\n\
+ Black/Red, Black/Green, Black/Yellow, White/Blue, White/Magenta,\n\
+ Black/Cyan, Black/White\n\
+\n\
 Default Options:\n\
  baudrate: 9600 | databits: 8 | parity: none | stopbits: 1 | flow control: none\n\
  tx newline: raw | rx newline: lf | local echo: off | hexmode: off\n"
@@ -338,15 +368,15 @@ Default Options:\n\
 def print_version():
 	print "ssterm version 1.3 - 03/19/2012"
 
-def int_handled(x):
+def int_handled(x, base=10):
 	try:
-		return int(x)
+		return int(x, base)
 	except:
-		return False
+		return None
 
 # Parse options
 try:
-	options, args = getopt.getopt(sys.argv[1:], "b:d:p:t:f:exhv", ["baudrate=", "databits=", "parity=", "stopbits=", "flowcontrol=", "tx-nl=", "rx-nl=", "echo", "hex", "hex-nl", "color-nl", "help", "version"])
+	options, args = getopt.getopt(sys.argv[1:], "b:d:p:t:f:exhvc:", ["baudrate=", "databits=", "parity=", "stopbits=", "flowcontrol=", "tx-nl=", "rx-nl=", "echo", "hex", "hex-nl", "color-nl", "help", "version", "color="])
 except getopt.GetoptError, err:
 	print str(err), "\n"
 	print_usage()
@@ -357,14 +387,14 @@ except getopt.GetoptError, err:
 for opt_c, opt_arg in options:
 	if opt_c in ("-b", "--baudrate"):
 		TTY_Options['baudrate'] = int_handled(opt_arg)
-		if (not TTY_Options['baudrate']):
-			sys.stderr.write("Invalid tty baudrate!\n")
+		if TTY_Options['baudrate'] == None:
+			sys.stderr.write("Error: Invalid tty baudrate!\n")
 			sys.exit(-1)
 
 	elif opt_c in ("-d", "--databits"):
 		TTY_Options['databits'] = int_handled(opt_arg)
-		if (not TTY_Options['databits']):
-			sys.stderr.write("Invalid tty data bits!\n")
+		if TTY_Options['databits'] == None:
+			sys.stderr.write("Error: Invalid tty data bits!\n")
 			sys.exit(-1)
 
 	elif opt_c in ("-p", "--parity"):
@@ -372,8 +402,8 @@ for opt_c, opt_arg in options:
 
 	elif opt_c in ("-t", "--stopbits"):
 		TTY_Options['stopbits'] = int_handled(opt_arg)
-		if (not TTY_Options['stopbits']):
-			sys.stderr.write("Invalid tty stop bits!\n")
+		if TTY_Options['stopbits'] == None:
+			sys.stderr.write("Error: Invalid tty stop bits!\n")
 			sys.exit(-1)
 
 	elif opt_c in ("-f", "--flowcontrol"):
@@ -385,25 +415,41 @@ for opt_c, opt_arg in options:
 	elif opt_c in ("-x", "--hex"):
 		Format_Options['hexmode'] = True
 
+	elif opt_c in ("-c", "--color"):
+		opt_arg = filter(lambda x: len(x) >= 1, opt_arg.split(","))
+		if len(opt_arg) > len(Color_Codes):
+			sys.stderr.write("Error: Maximum color code characters (%d) exceeded!\n" % len(Color_Codes))
+			sys.exit(-1)
+		# Parse ASCII and hex encoded characters into our Color_Chars dictionary
+		for c in opt_arg:
+			if len(c) == 1:
+				Color_Chars[ord(c)] = len(Color_Chars)
+			elif len(c) > 2 and c[0:2] == "0x":
+				c_int = int_handled(c, 16)
+				if c_int == None:
+					sys.stderr.write("Error: Unknown color code character: %s" % c)
+					sys.exit(-1)
+				Color_Chars[c_int] = len(Color_Chars)
+			else:
+				sys.stderr.write("Error: Unknown color code character: %s" % c)
+				sys.exit(-1)
+
 	elif opt_c == "--tx-nl":
 		Format_Options['txnl'] = opt_arg
 		if (not Format_Options['txnl'] in Valid_Newline_Type[0:-1]):
-			sys.stderr.write("Invalid tx newline type!\n")
+			sys.stderr.write("Error: Invalid tx newline type!\n")
 			print_usage()
 			sys.exit(-1)
 
 	elif opt_c == "--rx-nl":
 		Format_Options['rxnl'] = opt_arg
 		if (not Format_Options['rxnl'] in Valid_Newline_Type):
-			sys.stderr.write("Invalid rx newline type!\n")
+			sys.stderr.write("Error: Invalid rx newline type!\n")
 			print_usage()
 			sys.exit(-1)
 
 	elif opt_c == "--hex-nl":
 		Format_Options['hexnl'] = True
-
-	elif opt_c == "--color-nl":
-		Format_Options['colornl'] = True
 
 	elif opt_c in ("-h", "--help"):
 		print_usage()
@@ -426,6 +472,7 @@ if (serial_fd < 0):
 
 console_init()
 console_read_write_loop()
+sys.stdout.write("\n")
 
 # Close the serial port
 serial_close(serial_fd)
