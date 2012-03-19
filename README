@@ -6,10 +6,8 @@ Table of Contents
 
 1. ABOUT ssterm
 2. LICENSE
-3. COMPILING ssterm
-4. USING ssterm
-5. Shortcomings
-6. Example Usage
+3. USING ssterm
+4. Example Usage
 ================================================================================
 
 1. ABOUT ssterm
@@ -18,9 +16,9 @@ ssterm is a console-based simple serial port terminal.
 
 ssterm features several useful formatting options:
 	- hexadecimal representation
-		- newline interpretation
-	- choice of transmit newline character mapping (e.g. LF -> CRLF)
-	- choice of receive newline characters mapping (e.g. CR -> LF)
+		- newline interpretation in hexadecimal mode
+	- transmit newline character remapping (e.g. LF -> CRLF)
+	- receive newline character remapping (e.g. CR -> LF)
 	- local character echo
 
 ssterm is written in Python 2, but should work on most *nix platforms.  Feel
@@ -66,7 +64,7 @@ Similarly, the transmit newline character settings consist of:
 	* none - omit newline characters on transmit
 	* cr - map platform newline to CR on transmit
 	* lf - map platform newline to LF on transmit
-	* crlf - maps platform newline to CRLF on transmit
+	* crlf - map platform newline to CRLF on transmit
 
 The default receive newline character setting (rx-nl option) is lf.
 The default transmit newline character setting (rx-nl option) is raw.
