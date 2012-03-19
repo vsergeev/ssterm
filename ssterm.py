@@ -28,7 +28,7 @@ import re
 
 # Default TTY and Formatting Options
 TTY_Options = {'baudrate': 9600, 'databits': 8, 'stopbits': 1, 'parity': "none", 'flowcontrol': "none"}
-Format_Options = {'hexmode': False, 'txnl': "raw", 'rxnl': "lf", 'hexnl': False, 'echo': False}
+Format_Options = {'hexmode': False, 'txnl': "raw", 'rxnl': "raw", 'hexnl': False, 'echo': False}
 Color_Chars = {}
 Console_Newline = os.linesep
 
@@ -264,6 +264,7 @@ def console_formatted_print(data):
 				sys.stdout.write(" ")
 			# Insert a newline if we encounter one and we're
 			# interpreting them in hex mode
+			# FIXME: This assumes a single character platform newline.
 			if x == Console_Newline and Format_Options['hexnl']:
 				sys.stdout.write(Console_Newline)
 				stdout_cursor_x = 0
@@ -346,7 +347,7 @@ Written by Vanya A. Sergeev - <vsergeev@gmail.com>.\n\
                                  ASCII or hex to color code: A,$,_,0x0d,0x0a ...\n\
   --tx-nl <substitution>        Specify the transmit newline substitution\n\
                                  [raw, none, cr, lf, crlf]\n\
-  --rx-nl <match>               Specify the receive newline combination\n\
+  --rx-nl <match>               Specify the receive newline match\n\
                                  [raw, cr, lf, crlf, crorlf]\n\
   -e, --echo                    Turn on local character echo\n\
   -x, --hex                     Turn on hexadecimal representation mode\n\
@@ -363,7 +364,7 @@ Color Codes (fg/bg):\n\
 \n\
 Default Options:\n\
  baudrate: 9600 | databits: 8 | parity: none | stopbits: 1 | flow control: none\n\
- tx newline: raw | rx newline: lf | local echo: off | hexmode: off\n"
+ tx newline: raw | rx newline: raw | local echo: off | hexmode: off\n"
 
 def print_version():
 	print "ssterm version 1.3 - 03/19/2012"

@@ -12,6 +12,7 @@ Table of Contents
 
 1. ABOUT ssterm
 ================================================================================
+
 ssterm is a console-based simple serial port terminal.
 
 ssterm features several useful formatting options:
@@ -20,13 +21,14 @@ ssterm features several useful formatting options:
 	- transmit newline character remapping (e.g. LF -> CRLF)
 	- receive newline character remapping (e.g. CR -> LF)
 	- local character echo
-	- color coding particular characters
+	- color coding characters / bytes
 
-ssterm is written in Python 2, but should work on most *nix platforms.  Feel
+ssterm is written in Python 2, and should work on most *nix platforms.  Feel
 free to send any bugs, ideas, or suggestions to vsergeev at gmail dot com.
 
 2. LICENSE
 ================================================================================
+
 ssterm is released under the GNU General Public License Version 3.
     You should have received a copy of the GNU General Public License
     along with this program; see the file "COPYING".  If not, see
@@ -35,40 +37,40 @@ ssterm is released under the GNU General Public License Version 3.
 3. USING ssterm
 ================================================================================
 
-By default, ssterm will open the specified serial port with 9600 baudrate,
-8 data bits, no parity, 1 stop bit, and no flow control. These settings can be
-adjusted with the baudrate, databits, parity, stopbits, and flow-control
-options (see usage below).
+By default, ssterm will open the specified serial port with 9600 baudrate, 8
+data bits, no parity, 1 stop bit, and no flow control. These settings can be
+adjusted with the -b / --baudrate, -d / --databits, -p / --parity, -t /
+--stopbits, and -f / --flow-control options (see usage below).
 
 ssterm opens the input terminal in raw mode, so all characters and control
 signals are passed through transparently to the serial port. This enables use
-of terminal programs that interpret control characters with ssterm, such as
-shells on embedded systems. The only exception is Ctrl-[, which serves as
-ssterm's quit escape character.
+of terminal programs over the serial port that interpret control characters,
+such as shells on embedded systems. The only exception is Ctrl-[, which serves
+as ssterm's quit escape character.
 
-The newline characters can be substituted upon transmission and interpreted
-upon reception, and these mappings are specified with the tx-nl and rx-nl
+The newline characters can be remapped upon transmission and remapped upon
+reception, and these mappings are specified with the --tx-nl and --rx-nl
 options. These options were created to accomodate working with the serial port
 on LF based systems, but the functionality should extend to CR and CRLF based
-systems as well. The substitution and matching can be disabled by selecting raw
-mode for both tx-nl and rx-nl options.
+systems as well. The substitution and matching can be disabled by selecting
+'raw' mode for both --tx-nl and --rx-nl options.
 
-The following receive newline character settings are available:
-	* raw - no re-interpretation of received newline characters
+The following receive newline character remappings are available:
+	* raw - no remapping of received newline characters
 	* cr - map received CR to platform newline
 	* lf - map received LF to platform newline
 	* crlf - map received CRLF to platform newline
 	* crorlf - map any received CR or LF to platform newline
 
-Similarly, the transmit newline character settings consist of:
-	* raw - no substitution of transmitted newline characters
+The following transmit newline character remappings are available:
+	* raw - no remapping of transmit newline characters
 	* none - omit newline characters on transmit
 	* cr - map platform newline to CR on transmit
 	* lf - map platform newline to LF on transmit
 	* crlf - map platform newline to CRLF on transmit
 
-The default receive newline character setting (rx-nl option) is lf.
-The default transmit newline character setting (rx-nl option) is raw.
+The default receive newline character mapping (--rx-nl option) is raw.
+The default transmit newline character mapping (--rx-nl option) is raw.
 
 ssterm can color code particular characters, specified by a comma-delimited
 list with the -c or --color option. The list can contain ASCII entries (e.g.
@@ -77,15 +79,16 @@ currently a maximum of seven distinct colors, assigned sequentially to the
 specified characters in the following order: Black/Red, Black/Green,
 Black/Yellow, White/Blue, White/Magenta, Black/Cyan, Black/White.
 
-Additional settings include hexadecimal instead of ASCII representation of the
-data with the hex option, newline interpretation in hexadecimal mode with the
-hex-nl option, and local character echo with the echo option. These options
-are off by default.
+ssterm can display terminal output in hexadecimal representation, with the -x
+or --hex option, and also interpret newlines in this mode with the --hex-nl
+option. ASCII representation mode is default.
+
+Additional options include local character echo, which is off by default.
 
 =================
 
-Additional usage information from the program's command line options is provided
- below.
+Additional usage information from the program's command line options is
+provided below.
 
 Usage: ./ssterm.py <option(s)> <serial port>
 
@@ -101,10 +104,10 @@ Written by Vanya A. Sergeev - <vsergeev@gmail.com>.
 
  Formatting Options:
   -c, --color <list>            Specify comma-delimited list of characters in
-                                 ASCII or hex to color code: A,$,_,0x0d,0x0a ...
+                                 ASCII or hex to color code: A,$,_,0x0d,0x0a,...
   --tx-nl <substitution>        Specify the transmit newline substitution
                                  [raw, none, cr, lf, crlf]
-  --rx-nl <match>               Specify the receive newline combination
+  --rx-nl <match>               Specify the receive newline match
                                  [raw, cr, lf, crlf, crorlf]
   -e, --echo                    Turn on local character echo
   -x, --hex                     Turn on hexadecimal representation mode
@@ -127,23 +130,23 @@ Default Options:
 4. Example Usage
 ================================================================================
 
-typical ssterm usage with defaults (9600 8N1, no flow control):
+typical usage with defaults (9600 8N1, no flow control):
 $ ssterm /dev/ttyUSB0
 
-ssterm logging some data:
+logging some data:
 $ ssterm /dev/ttyUSB0 > nmea_data.txt
 
-ssterm viewing and logging some data, with the help of tee:
+viewing and logging some data, with the help of tee:
 $ ssterm /dev/ttyUSB0 | tee nmea_data.txt
 
-ssterm with specified serial port settings (115200 baudrate, odd parity, 2 stop
-bits), and the default 8 data bits:
+specific serial port settings (115200 baudrate, odd parity, 2 stop bits), and
+the default 8 data bits:
 $ ssterm -b 115200 -p odd -t 2
 
-ssterm with CRLF for transmitted newlines, but just LF for received newlines:
+CRLF for transmitted newlines, but LF for received newlines:
 $ ssterm --tx-nl crlf --rx-nl lf /dev/ttyUSB0
 
-ssterm with hexadecimal representation mode:
+hexadecimal representation mode:
 $ ssterm -x /dev/ttyUSB0
 24 47 50 47 47 41 2C 30 38 32 38 33 30 2E 38 32  31 2C 2C 2C 2C 2C 30 2C 30 30 2C 2C 2C 4D 2C 30
 2E 30 2C 4D 2C 2C 30 30 30 30 2A 35 43 0D 0A 24  47 50 47 53 41 2C 41 2C 31 2C 2C 2C 2C 2C 2C 2C
@@ -154,6 +157,6 @@ $ ssterm -x /dev/ttyUSB0
 0A 24 47 50 52 4D 43 2C 30 38 32 38 33 31 2E 38  31 34 2C 56 2C 2C 2C 2C 2C 2C 2C 32 36 31 30 30
 39 2C 2C 2A 32 45 0D 0A 24 47 50 47 47 41 2C 30  38
 
-ssterm with hexadecimal representation mode, newline interpretation, and color
-coding:
+hexadecimal representation mode, with newline interpretation and color coding:
 $ ssterm -x --hex-nl -c $,0x0a,0x0d /dev/ttyUSB0
+
