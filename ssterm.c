@@ -1,4 +1,4 @@
-/* 
+/*
  * ssterm - simple serial-port terminal.
  * Version 1.2 - February 2011
  * Written by Vanya A. Sergeev - <vsergeev@gmail.com>
@@ -16,7 +16,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
 #include <stdio.h>
@@ -33,8 +33,9 @@
 #include <curses.h>
 #include <errno.h>
 #include <getopt.h>
+#include <ctype.h>
 
-/* Much of the dirty work is keeping the circular receive buffer printing 
+/* Much of the dirty work is keeping the circular receive buffer printing
  * cleanly with the fixed size and non-wrapping curses pad, which displays the
  * actual data. */
 
@@ -149,7 +150,7 @@ pthread_mutex_t rth_signal_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* curses window and coordinates */
 WINDOW *screen_pad;
-/* screen viewport index of the curses pad */ 
+/* screen viewport index of the curses pad */
 int screen_pad_y;
 /* curses max lines and cols saved from original measurement */
 int screen_max_lines, screen_max_cols;
@@ -270,7 +271,7 @@ int tty_set_options(void) {
 
 	/* Clear cflag and set it from scratch */
 	options.c_cflag = 0;
-	
+
 	/* Set the input and output baudrates */
 	retVal = cfsetispeed(&options, new_baudrate);
 	if (retVal < 0)
@@ -299,7 +300,7 @@ int tty_set_options(void) {
 		case 2: options.c_cflag |= CSTOPB; break;
 		default: return ERROR_STOPBITS;
 	}
-	
+
 	switch (tty_flowcontrol) {
 		case FLOW_CONTROL_NONE: break;
 		case FLOW_CONTROL_RTSCTS: options.c_cflag |= CRTSCTS; break;			/* We'll handle this later, in c_iflag */
@@ -321,7 +322,7 @@ int tty_set_options(void) {
 
 	/* Ignore break characters */
 	options.c_iflag = IGNBRK;
-	/* Enable parity checking and parity bit stripping if we are using 
+	/* Enable parity checking and parity bit stripping if we are using
 	 * parity */
 	if (tty_parity != PARITY_NONE)
 		options.c_iflag |= (INPCK | ISTRIP);
@@ -355,7 +356,7 @@ int tty_read_circular(void) {
 	retVal = read(tty_fd, tty_buffer+tty_buffer_index_1, tty_buffer_size-tty_buffer_index_2);
 	if (retVal < 0 && errno != EWOULDBLOCK)
 		return ERROR_ERRNO;
-	
+
 	/* If no data was returned because none was available */
 	if (retVal < 0 && errno == EWOULDBLOCK)
 		tty_buffer_index_2 += 0;
@@ -437,7 +438,7 @@ int tty_buffer_dump(void) {
 		/* Write from the beginning of the buffer to index 1 */
 		if (fwrite(tty_buffer, 1, tty_buffer_index_2, fp) < tty_buffer_index_2)
 			return -1;
-		
+
 	} else {
 		/* We haven't wrapped around yet, so just write from beginning
 		 * of the buffer to index 2 */
@@ -470,15 +471,15 @@ int screen_init(void) {
 	/* Create a new pad the user can scroll through the tty data with */
 	getmaxyx(stdscr, screen_max_lines, screen_max_cols);
 	screen_pad = newpad(tty_buffer_size, screen_max_cols);
-	if (newpad == NULL)
+	if (screen_pad == NULL)
 		return ERROR_ERRNO;
-		
+
 	/* Initialize colors and the color pairs for the color coded characters,
 	 * if they exist. */
 	start_color();
 	for (i = 0; i < sizeof(screen_color_coded_chars); i++) {
 		init_pair(i+1, COLOR_BLACK, screen_color_coded_colors[i]);
-	} 
+	}
 
 	/* Reset our pad window of view */
 	screen_pad_y = 0;
@@ -497,7 +498,7 @@ void screen_scroll_home(void) {
 
 void screen_scroll_end(void) {
 	int cursor_y, cursor_x;
-	
+
 	/* Bound the scroll down with at the end of the current cursor */
 	getyx(screen_pad, cursor_y, cursor_x);
 	screen_pad_y = cursor_y-screen_max_lines+1;
@@ -533,7 +534,7 @@ void screen_update(int index_1, int index_2) {
 	ui_options_copy = ui_options;
 	pthread_mutex_unlock(&ui_options_mutex);
 
-	/* Print the characters from specified index_1 to index_2 of the tty 
+	/* Print the characters from specified index_1 to index_2 of the tty
 	 * buffer */
 	for (screen_index = index_1; screen_index < index_2; screen_index++) {
 		if (ui_options_copy & UI_OPTION_HEX) {
@@ -567,13 +568,13 @@ void screen_update(int index_1, int index_2) {
 					if (tty_input_newline & OPTION_NEWLINE_CRLF)
 						found_cr = 1;
 				/* If we just need CR, print a newline now */
-					else if (tty_input_newline & OPTION_NEWLINE_CR) 
+					else if (tty_input_newline & OPTION_NEWLINE_CR)
 						waddch(screen_pad, '\n');
 				} else if (tty_buffer[screen_index] == '\n') {
 				/* If we need both CRLF, and we already found
 			 	 * CR, go ahead and print the newline */
 					if (tty_input_newline & OPTION_NEWLINE_CRLF) {
-						if (found_cr) 
+						if (found_cr)
 							waddch(screen_pad, '\n');
 				/* If we just need LF, print a newline now */
 					} else if (tty_input_newline & OPTION_NEWLINE_LF) {
@@ -622,8 +623,9 @@ void screen_update(int index_1, int index_2) {
 					waddch(screen_pad, '\n');
 				}
 			} else {
-				/* Print the normal character as usual */
-				waddch(screen_pad, tty_buffer[screen_index]);
+				/* Print the normal printable character as usual */
+				if (isprint(tty_buffer[screen_index]) || isspace(tty_buffer[screen_index]))
+					waddch(screen_pad, tty_buffer[screen_index]);
 				/* If we were looking for the LF to a CR,
 				 * and we didn't come across it, clear our
 				 * reminder. */
@@ -698,7 +700,7 @@ void stdout_print(void) {
 				 * reminder. */
 					found_cr = 0;
 				}
-			}	
+			}
 
 			/* Pretty print for hex characters */
 
@@ -710,7 +712,7 @@ void stdout_print(void) {
 				stdout_cursor_x = 0;
 			} else if (stdout_cursor_x != 0) {
 				fputc(' ', stdout);
-			}			
+			}
 		} else {
 			/* Special handling for newlines */
 			if (tty_buffer[i] == '\r' && !(tty_input_newline & OPTION_NEWLINE_RAW)) {
@@ -732,7 +734,7 @@ void stdout_print(void) {
 					fputc('\n', stdout);
 				}
 			} else {
-				/* Print the normal character as usual */
+				/* Print the normal printable characters as usual */
 				fputc(tty_buffer[i], stdout);
 				/* If we were looking for the LF to a CR,
 				 * and we didn't come across it, clear our
@@ -803,7 +805,7 @@ void *read_curses_loop(void *id) {
 				 * buffer so far, beginning of buffer to index 2
 				 */
 				screen_update(0, tty_buffer_index_2);
-			}	
+			}
 			/* Adjust screen pad y to the "new end"
 			 * This has to do with our screen pad actually
 			 * being greater in size than the tty buffer
@@ -846,7 +848,7 @@ void *read_curses_loop(void *id) {
 		screen_update(tty_buffer_index_1, tty_buffer_index_2);
 
 		/* Catch up the tty buffer index 1 to index 2 now that we have
-		 * updated the screen with the new data */	
+		 * updated the screen with the new data */
 		tty_buffer_index_1 = tty_buffer_index_2;
 
 		/* Clear our file descriptor list and add our tty fd */
@@ -873,7 +875,7 @@ void *read_curses_loop(void *id) {
 		}
 	}
 
-	return NULL;	
+	return NULL;
 }
 
 void write_curses_loop(void) {
@@ -886,7 +888,7 @@ void write_curses_loop(void) {
 		pthread_mutex_lock(&ui_options_mutex);
 		ui_options_copy = ui_options;
 		pthread_mutex_unlock(&ui_options_mutex);
-		
+
 		ch = wgetch(stdscr);
 		/* Check for special control keys */
 		if (ch == KEY_UP) {
@@ -939,7 +941,7 @@ void write_curses_loop(void) {
 			pthread_mutex_unlock(&rth_signal_mutex);
 		} else {
 			/* Otherwise, write out the terminal */
-			
+
 			/* If we encountered a newline character */
 			if (ch == '\n') {
 				/* Send CRLF if we are outputting CRLF and
@@ -950,12 +952,12 @@ void write_curses_loop(void) {
 				/* Change to CR if we are just outputting CR */
 				} else if (tty_output_newline & OPTION_NEWLINE_CR) {
 					ch = '\r';
-				/* Ignore this character if we are not 
+				/* Ignore this character if we are not
 				 * transmitting newlines. */
 				} else if (tty_output_newline & OPTION_NEWLINE_NONE) {
 					continue;
 				}
-			}	
+			}
 			tty_write((unsigned char *)&ch, 1);
 		}
 
@@ -963,7 +965,7 @@ void write_curses_loop(void) {
 		pthread_mutex_lock(&ui_options_mutex);
 		ui_options = ui_options_copy;
 		pthread_mutex_unlock(&ui_options_mutex);
-	}		
+	}
 }
 
 /******************************************************************************
@@ -1042,7 +1044,7 @@ int read_write_stdin_loop(void) {
 		}
 
 		if (FD_ISSET(tty_fd, &rfds)) {
-			/* Read from the serial port */	
+			/* Read from the serial port */
 			retVal = tty_read_regular();
 			if (retVal < 0) {
 				perror("Error reading");
@@ -1080,7 +1082,7 @@ static struct option long_options[] = {
 	{"hex", no_argument, NULL, 'x'},
 	{"hex-nl", no_argument, NULL, 0},
 	/* Curses Formatting Options */
-	{"rx-nl-color", no_argument, NULL, 'c'}, 
+	{"rx-nl-color", no_argument, NULL, 'c'},
 	/* Misc. Options */
 	{"help", no_argument, NULL, 'h'},
 	{"commands", no_argument, NULL, 'k'},
@@ -1092,7 +1094,7 @@ static void printVersion(FILE *stream) {
 	fprintf(stream, "ssterm version 1.2 - 02/04/2011\n");
 	fprintf(stream, "Written by Vanya Sergeev - <vsergeev@gmail.com>\n");
 }
-	
+
 static void printCommands(FILE *stream) {
 	fprintf(stream, "\n\
 Curses Commands for ssterm:\n\
@@ -1169,7 +1171,7 @@ int main(int argc, char *argv[]) {
 		optc = getopt_long(argc, (char * const *)argv, "b:d:p:t:f:scxehkv", long_options, &long_index);
 		if (optc == -1)
 			break;
-		
+
 		#define str_option_cmp(str) (strcasecmp(optarg, str) == 0)
 		switch (optc) {
 			/* Long option */
@@ -1265,7 +1267,7 @@ int main(int argc, char *argv[]) {
 		printUsage(stderr, argv[0]);
 		exit(EXIT_FAILURE);
 	}
-	
+
 	if (!(ui_options & UI_OPTION_STDIN_STDOUT) && (tty_input_newline & OPTION_NEWLINE_RAW)) {
 		fprintf(stderr, "Error: receive newline character option 'raw' unsupported in curses mode (CR characters will delete lines).\n");
 		exit(EXIT_FAILURE);
@@ -1280,7 +1282,7 @@ int main(int argc, char *argv[]) {
 	/* Open the serial port in read-write, nonblocking, and not as a
 	 * controlling terminal. */
 	retVal = tty_open(argv[optind], O_RDWR | O_NOCTTY | O_NONBLOCK);
-	if (retVal < 0) {	
+	if (retVal < 0) {
 		perror("Error opening serial port");
 		exit(EXIT_FAILURE);
 	}
@@ -1335,7 +1337,7 @@ int main(int argc, char *argv[]) {
 			exit(EXIT_FAILURE);
 		}
 
-		/* Thread our read and write loops */
+		/* Create a thread for the curses read loop */
 		retVal = pthread_create(&read_thread, NULL, read_curses_loop, NULL);
 		if (retVal < 0) {
 			screen_cleanup();

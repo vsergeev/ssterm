@@ -201,8 +201,8 @@ This version of ssterm does not support file-based configuration. However, this
 feature is planned for the next release.
 
 ssterm does not support printing raw receive newline characters in curses 
-interface (curses interprets a CR character literally and deletes any line just
-written to the screen). There may be a work-around for this in a future release
+interface (curses interprets a CR character literally and deletes the current
+line on the screen). There may be a work-around for this in a future release
 (such as a color-coded blank character). The stdin/stdout interface, however, 
 does support raw receive newline characters.
 
