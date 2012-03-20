@@ -13,11 +13,11 @@ Table of Contents
 1. ABOUT ssterm
 ================================================================================
 
-ssterm is a console-based simple serial port terminal.
-
-ssterm features several useful formatting options:
-	- hexadecimal representation
-		- newline interpretation in hexadecimal mode
+ssterm is a console-based simple serial port terminal. It features painless
+serial port configuration, no dependencies outside of a standard Python 2
+installation, is contained in a single file, and provides a variety of useful
+formatting options:
+	- hexadecimal representation with optional newline interpretation
 	- transmit newline character remapping (e.g. LF -> CRLF)
 	- receive newline character remapping (e.g. CR -> LF)
 	- local character echo
@@ -43,10 +43,10 @@ adjusted with the -b / --baudrate, -d / --databits, -p / --parity, -t /
 --stopbits, and -f / --flow-control options (see usage below).
 
 ssterm opens the input terminal in raw mode, so all characters and control
-signals are passed through transparently to the serial port. This enables use
-of terminal programs over the serial port that interpret control characters,
-such as shells on embedded systems. The only exception is Ctrl-[, which serves
-as ssterm's quit escape character.
+signals are passed through transparently to the serial port. This enables
+interacting with terminal interfaces over the serial port that interpret
+control characters, such as a *nix termios on an embedded system. The only
+exception is Ctrl-[, which serves as ssterm's quit escape character.
 
 The newline characters can be remapped upon transmission and remapped upon
 reception, and these mappings are specified with the --tx-nl and --rx-nl
@@ -130,23 +130,23 @@ Default Options:
 4. Example Usage
 ================================================================================
 
-typical usage with defaults (9600 8N1, no flow control):
+Typical usage with defaults (9600 8N1, no flow control):
 $ ssterm /dev/ttyUSB0
 
-logging some data:
+Logging some data:
 $ ssterm /dev/ttyUSB0 > nmea_data.txt
 
-viewing and logging some data, with the help of tee:
+Viewing and logging some data, with the help of tee:
 $ ssterm /dev/ttyUSB0 | tee nmea_data.txt
 
-specific serial port settings (115200 baudrate, odd parity, 2 stop bits), and
+Specific serial port settings (115200 baudrate, odd parity, 2 stop bits), and
 the default 8 data bits:
 $ ssterm -b 115200 -p odd -t 2
 
 CRLF for transmitted newlines, but LF for received newlines:
 $ ssterm --tx-nl crlf --rx-nl lf /dev/ttyUSB0
 
-hexadecimal representation mode:
+Hexadecimal representation mode:
 $ ssterm -x /dev/ttyUSB0
 24 47 50 47 47 41 2C 30 38 32 38 33 30 2E 38 32  31 2C 2C 2C 2C 2C 30 2C 30 30 2C 2C 2C 4D 2C 30
 2E 30 2C 4D 2C 2C 30 30 30 30 2A 35 43 0D 0A 24  47 50 47 53 41 2C 41 2C 31 2C 2C 2C 2C 2C 2C 2C
@@ -157,6 +157,6 @@ $ ssterm -x /dev/ttyUSB0
 0A 24 47 50 52 4D 43 2C 30 38 32 38 33 31 2E 38  31 34 2C 56 2C 2C 2C 2C 2C 2C 2C 32 36 31 30 30
 39 2C 2C 2A 32 45 0D 0A 24 47 50 47 47 41 2C 30  38
 
-hexadecimal representation mode, with newline interpretation and color coding:
+Hexadecimal representation mode, with newline interpretation and color coding:
 $ ssterm -x --hex-nl -c $,0x0a,0x0d /dev/ttyUSB0
 

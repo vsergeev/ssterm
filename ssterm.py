@@ -235,10 +235,8 @@ def console_formatted_print(data):
 			data = stdout_nl_match_save + data
 			stdout_nl_match_save = ''
 
-		# Split by all newline matches
-		data = re.split(rxnl_match, data)
-		# Re-join with the console line separator
-		data = reduce(lambda x, y: x + Console_Newline + y, data)
+		# Substitute newline matches with console line separator
+		data = re.sub(rxnl_match, Console_Newline, data)
 
 		# If the last character is a part of a match, save it for later
 		if data[-1] == rxnl_match[0][0]:
@@ -301,7 +299,9 @@ def console_read_write_loop():
 				sys.stderr.write("Error: reading stdin: %s\n" % buff)
 				break
 			if len(buff) > 0:
-				# Perform transmit newline subsitutions if necessary
+				# Perform transmit newline subsitutions if
+				# necessary FIXME: This assumes a single
+				# character platform newline.
 				if txnl_sub != None:
 					buff = map(lambda x: txnl_sub if x == Console_Newline else x, list(buff))
 					buff = ''.join(buff)
@@ -330,7 +330,7 @@ def console_read_write_loop():
 ###########################################################################
 
 def print_usage():
-	print "Usage: %s <option(s)> <serial port>\n" % sys.argv[0]
+	print "Usage: %s [options] <serial port>\n" % sys.argv[0]
 	print "\
 ssterm - simple serial-port terminal\n\
 Written by Vanya A. Sergeev - <vsergeev@gmail.com>.\n\
