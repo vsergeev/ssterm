@@ -437,14 +437,14 @@ for opt_c, opt_arg in options:
 
 	elif opt_c == "--tx-nl":
 		Format_Options['txnl'] = opt_arg
-		if (not Format_Options['txnl'] in Valid_Newline_Type[0:-1]):
+		if (not Format_Options['txnl'] in Valid_TX_Newline_Type):
 			sys.stderr.write("Error: Invalid tx newline type!\n")
 			print_usage()
 			sys.exit(-1)
 
 	elif opt_c == "--rx-nl":
 		Format_Options['rxnl'] = opt_arg
-		if (not Format_Options['rxnl'] in Valid_Newline_Type):
+		if (not Format_Options['rxnl'] in Valid_RX_Newline_Type):
 			sys.stderr.write("Error: Invalid rx newline type!\n")
 			print_usage()
 			sys.exit(-1)
