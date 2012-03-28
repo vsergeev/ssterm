@@ -5,9 +5,10 @@ Vanya A. Sergeev - vsergeev at gmail
 Table of Contents
 
 1. ABOUT ssterm
-2. LICENSE
-3. USING ssterm
-4. Example Usage
+2. USAGE
+3. LICENSE
+4. USING ssterm
+5. Example Usage
 ================================================================================
 
 1. ABOUT ssterm
@@ -18,8 +19,9 @@ serial port configuration, no dependencies outside of a standard Python 2
 installation, is contained in a single file, and provides a variety of useful
 formatting options:
 	- split hexadecimal/ASCII representation
-	- hexadecimal representation with optional newline interpretation
+	- pure hexadecimal representation with optional newline interpretation
 	- color coding bytes in all three split, hexadecimal, and ASCII modes
+	- raw terminal with control character forwarding
 	- transmit newline character remapping (e.g. LF -> CRLF)
 	- receive newline character remapping (e.g. CR -> LF)
 	- local character echo
@@ -27,7 +29,57 @@ formatting options:
 ssterm is written in Python 2, and should work on most *nix platforms.  Feel
 free to send any bugs, ideas, or suggestions to vsergeev at gmail dot com.
 
-2. LICENSE
+2. USAGE
+================================================================================
+
+Usage: ./ssterm.py [options] <serial port>
+
+ssterm - simple serial-port terminal
+Written by Vanya A. Sergeev - <vsergeev@gmail.com>.
+
+ Serial Port Options:
+  -b, --baudrate <rate>         Specify the baudrate
+  -d, --databits <number>       Specify the number of data bits [5,6,7,8]
+  -p, --parity <type>           Specify the parity [none, odd, even]
+  -t, --stopbits <number>       Specify number of stop bits [1,2]
+  -f, --flow-control <type>     Specify the flow-control [none, rtscts, xonxoff]
+
+ Formatting Options:
+  -s, --split                   Split hexadecimal/ASCII mode
+
+  --split-full			Split hexadecimal/ASCII mode with full lines
+                                 (good for piping)
+
+  -x, --hex                     Pure hexadecimal mode
+  --hex-nl                      Print newlines in pure hexadecimal mode
+
+  -c, --color <list>            Specify comma-delimited list of characters in
+                                 ASCII or hex to color code: A,$,_,0x0d,0x0a ...
+
+  --tx-nl <substitution>        Specify the transmit newline substitution
+                                 [raw, none, cr, lf, crlf]
+  --rx-nl <match>               Specify the receive newline match
+                                 [raw, cr, lf, crlf, crorlf]
+
+  -e, --echo                    Turn on local character echo
+
+  -h, --help                    Display this usage/help
+  -v, --version                 Display the program's version
+
+
+Quit Escape Character:          Ctrl-[
+
+Color Code Sequence (fg/bg):
+ Black/Red, Black/Green, Black/Yellow, White/Blue, White/Magenta,
+ Black/Cyan, Black/White
+
+Default Options:
+ baudrate: 9600 | databits: 8 | parity: none | stopbits: 1 | flow control: none
+ tx newline: raw | rx newline: raw | local echo: off
+ split mode: off | hex mode: off   | color code: off
+
+
+3. LICENSE
 ================================================================================
 
 ssterm is released under the GNU General Public License Version 3.
@@ -35,7 +87,7 @@ ssterm is released under the GNU General Public License Version 3.
     along with this program; see the file "COPYING".  If not, see
     <http://www.gnu.org/licenses/>.
 
-3. USING ssterm
+4. USING ssterm
 ================================================================================
 
 By default, ssterm will open the specified serial port with 9600 baudrate, 8
@@ -94,59 +146,7 @@ The default transmit newline character mapping (--rx-nl option) is raw.
 
 Other options include local character echo, which is off by default.
 
-=================
-
-Additional usage information from the program's command line options is
-provided below.
-
-Usage: ./ssterm.py [options] <serial port>
-
-ssterm - simple serial-port terminal
-Written by Vanya A. Sergeev - <vsergeev@gmail.com>.
-
- Serial Port Options:
-  -b, --baudrate <rate>         Specify the baudrate
-  -d, --databits <number>       Specify the number of data bits [5,6,7,8]
-  -p, --parity <type>           Specify the parity [none, odd, even]
-  -t, --stopbits <number>       Specify number of stop bits [1,2]
-  -f, --flow-control <type>     Specify the flow-control [none, rtscts, xonxoff]
-
- Formatting Options:
-  -s, --split                   Split hexadecimal/ASCII mode
-
-  --split-full			Split hexadecimal/ASCII mode with full lines
-                                 (good for piping)
-
-  -x, --hex                     Pure hexadecimal mode
-  --hex-nl                      Print newlines in pure hexadecimal mode
-
-  -c, --color <list>            Specify comma-delimited list of characters in
-                                 ASCII or hex to color code: A,$,_,0x0d,0x0a ...
-
-  --tx-nl <substitution>        Specify the transmit newline substitution
-                                 [raw, none, cr, lf, crlf]
-  --rx-nl <match>               Specify the receive newline match
-                                 [raw, cr, lf, crlf, crorlf]
-
-  -e, --echo                    Turn on local character echo
-
-  -h, --help                    Display this usage/help
-  -v, --version                 Display the program's version
-
-
-Quit Escape Character:          Ctrl-[
-
-Color Code Sequence (fg/bg):
- Black/Red, Black/Green, Black/Yellow, White/Blue, White/Magenta,
- Black/Cyan, Black/White
-
-Default Options:
- baudrate: 9600 | databits: 8 | parity: none | stopbits: 1 | flow control: none
- tx newline: raw | rx newline: raw | local echo: off
- split mode: off | hex mode: off   | color code: off
-
-
-4. Example Usage
+5. Example Usage
 ================================================================================
 
 Typical usage with defaults (9600 8N1, no flow control):
@@ -213,7 +213,7 @@ E1 E2 E3 E4 E5 E6 E7 E8  E9 EA EB EC ED EE EF F0   |................|
 F1 F2 F3 F4 F5 F6 F7 F8  F9 FA FB FC FD FE FF      |...............|
 
 Split representation mode with color coding:
-$ ssterm -s -c a,0xAE,0x0A,( /dev/ttyUSB0
+$ ssterm -s -c 0x0A,{,g,0xAE /dev/ttyUSB0
 
 Hexadecimal representation mode:
 $ ssterm -x /dev/ttyUSB0
