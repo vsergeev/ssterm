@@ -289,7 +289,7 @@ def console_formatted_print(data):
 				sys.stdout.write(Console_Newline)
 				stdout_cursor_x = 0
 
-	# Convert to split ASCII-hex if we're in split mode
+	# Convert to split hex-ASCII if we're in split mode
 	elif Format_Options['splitmode'] or Format_Options['splitfullmode']:
 		# Only print partial strings if we're not in split full mode
 		if not Format_Options['splitfullmode']:
@@ -318,7 +318,7 @@ def console_formatted_print(data):
 			# Fill up the rest of the hexadecimal representation
 			# with blank space
 			if len(byte_list) < Hexmode_Columns/2:
-				# Account for the print print separator
+				# Account for the pretty print column separator
 				sys.stdout.write(" " + " "*(3*(Hexmode_Columns-len(byte_list))))
 			elif len(byte_list) < Hexmode_Columns:
 				sys.stdout.write(" "*(3*(Hexmode_Columns-len(byte_list))))
@@ -326,10 +326,18 @@ def console_formatted_print(data):
 			# Print the ASCII representation
 			sys.stdout.write("  |")
 			for i in range(len(byte_list)):
+				# Use the character if it's an ASCII printable
+				# character, otherwise use a dot
 				if (byte_list[i] in string.letters+string.digits+string.punctuation+' '):
-					sys.stdout.write(byte_list[i])
+					c = byte_list[i]
 				else:
-					sys.stdout.write(".")
+					c = "."
+				# Color code this character if it's in our
+				# color chars dictionary
+				if len(Color_Chars) > 0 and ord(byte_list[i]) in Color_Chars:
+					sys.stdout.write(Color_Codes[Color_Chars[ord(byte_list[i])]] + c + Color_Code_Reset)
+				else:
+					sys.stdout.write(c)
 			sys.stdout.write("|")
 
 		for x in list(data):
@@ -426,18 +434,23 @@ Written by Vanya A. Sergeev - <vsergeev@gmail.com>.\n\
   -f, --flow-control <type>     Specify the flow-control [none, rtscts, xonxoff]\n\
 \n\
  Formatting Options:\n\
+  -s, --split                   Split hexadecimal/ASCII mode\n\
+\n\
+  --split-full			Split hexadecimal/ASCII mode with full lines\n\
+                                 (good for piping)\n\
+\n\
+  -x, --hex                     Pure hexadecimal mode\n\
+  --hex-nl                      Print newlines in pure hexadecimal mode\n\
+\n\
   -c, --color <list>            Specify comma-delimited list of characters in\n\
                                  ASCII or hex to color code: A,$,_,0x0d,0x0a ...\n\
+\n\
   --tx-nl <substitution>        Specify the transmit newline substitution\n\
                                  [raw, none, cr, lf, crlf]\n\
   --rx-nl <match>               Specify the receive newline match\n\
                                  [raw, cr, lf, crlf, crorlf]\n\
+\n\
   -e, --echo                    Turn on local character echo\n\
-  -s, --split                   Turn on split ASCII/hexadecimal mode\n\
-  --split-full			Turn on split ASCII/hexadecimal mode with full\n\
-                                 lines (good for piping)\n\
-  -x, --hex                     Turn on hexadecimal mode\n\
-  --hex-nl                      Turn on newlines in hexadecimal mode\n\
 \n\
   -h, --help                    Display this usage/help\n\
   -v, --version                 Display the program's version\n\n"
@@ -451,7 +464,7 @@ Color Code Sequence (fg/bg):\n\
 Default Options:\n\
  baudrate: 9600 | databits: 8 | parity: none | stopbits: 1 | flow control: none\n\
  tx newline: raw | rx newline: raw | local echo: off\n\
- split mode: off | hex mode: off\n"
+ split mode: off | hex mode: off   | color code: off\n"
 
 def print_version():
 	print "ssterm version 1.4 - 03/28/2012"
