@@ -270,9 +270,9 @@ def console_formatted_print(data):
 		for x in list(data):
 			# Color code this character if it's in our color chars dictionary
 			if len(Color_Chars) > 0 and ord(x) in Color_Chars:
-				sys.stdout.write(Color_Codes[Color_Chars[ord(x)]] + ("%02X" % ord(x)) + Color_Code_Reset)
+				sys.stdout.write(Color_Codes[Color_Chars[ord(x)]] + ("%02x" % ord(x)) + Color_Code_Reset)
 			else:
-				sys.stdout.write("%02X" % ord(x))
+				sys.stdout.write("%02x" % ord(x))
 			stdout_cursor_x += 1
 			# Pretty print into two columns
 			if stdout_cursor_x == Hexmode_Columns/2:
@@ -305,9 +305,9 @@ def console_formatted_print(data):
 			for i in range(len(byte_list)):
 				# Color code this character if it's in our color chars dictionary
 				if len(Color_Chars) > 0 and ord(byte_list[i]) in Color_Chars:
-					sys.stdout.write(Color_Codes[Color_Chars[ord(byte_list[i])]] + ("%02X" % ord(byte_list[i])) + Color_Code_Reset)
+					sys.stdout.write(Color_Codes[Color_Chars[ord(byte_list[i])]] + ("%02x" % ord(byte_list[i])) + Color_Code_Reset)
 				else:
-					sys.stdout.write("%02X" % ord(byte_list[i]))
+					sys.stdout.write("%02x" % ord(byte_list[i]))
 
 				# Pretty print into two columns
 				if (i+1) == Hexmode_Columns/2:
@@ -324,7 +324,7 @@ def console_formatted_print(data):
 				sys.stdout.write(" "*(3*(Hexmode_Columns-len(byte_list))))
 
 			# Print the ASCII representation
-			sys.stdout.write("  |")
+			sys.stdout.write(" |")
 			for i in range(len(byte_list)):
 				# Use the character if it's an ASCII printable
 				# character, otherwise use a dot
