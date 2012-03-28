@@ -427,11 +427,11 @@ ssterm - simple serial-port terminal\n\
 Written by Vanya A. Sergeev - <vsergeev@gmail.com>.\n\
 \n\
  Serial Port Options:\n\
-  -b, --baudrate <rate>         Specify the baudrate\n\
-  -d, --databits <number>       Specify the number of data bits [5,6,7,8]\n\
-  -p, --parity <type>           Specify the parity [none, odd, even]\n\
+  -b, --baudrate <rate>         Specify baudrate\n\
+  -d, --databits <number>       Specify number of data bits [5,6,7,8]\n\
+  -p, --parity <type>           Specify parity [none, odd, even]\n\
   -t, --stopbits <number>       Specify number of stop bits [1,2]\n\
-  -f, --flow-control <type>     Specify the flow-control [none, rtscts, xonxoff]\n\
+  -f, --flow-control <type>     Specify flow-control [none, rtscts, xonxoff]\n\
 \n\
  Formatting Options:\n\
   -s, --split                   Split hexadecimal/ASCII mode\n\
@@ -443,12 +443,12 @@ Written by Vanya A. Sergeev - <vsergeev@gmail.com>.\n\
   --hex-nl                      Print newlines in pure hexadecimal mode\n\
 \n\
   -c, --color <list>            Specify comma-delimited list of characters in\n\
-                                 ASCII or hex to color code: A,$,_,0x0d,0x0a ...\n\
+                                 ASCII or hex to color code: A,$,0x0d,0x0a,...\n\
 \n\
   --tx-nl <substitution>        Specify the transmit newline substitution\n\
-                                 [raw, none, cr, lf, crlf]\n\
+                                  [raw, none, cr, lf, crlf]\n\
   --rx-nl <match>               Specify the receive newline match\n\
-                                 [raw, cr, lf, crlf, crorlf]\n\
+                                  [raw, cr, lf, crlf, crorlf]\n\
 \n\
   -e, --echo                    Turn on local character echo\n\
 \n\
@@ -462,7 +462,7 @@ Color Code Sequence (fg/bg):\n\
  Black/Cyan, Black/White\n\
 \n\
 Default Options:\n\
- baudrate: 9600 | databits: 8 | parity: none | stopbits: 1 | flow control: none\n\
+ baudrate: 9600 | databits: 8 | parity: none | stopbits: 1 | flow ctrl: none\n\
  tx newline: raw | rx newline: raw | local echo: off\n\
  split mode: off | hex mode: off   | color code: off\n"
 
