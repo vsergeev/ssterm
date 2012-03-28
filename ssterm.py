@@ -1,7 +1,7 @@
 #!/usr/bin/python2
 
 # ssterm - simple serial-port terminal
-# Version 1.3 - March 2012
+# Version 1.4 - March 2012
 # Written by Vanya A. Sergeev - <vsergeev@gmail.com>
 #
 # Copyright (C) 2007-2012 Vanya A. Sergeev
@@ -25,15 +25,16 @@ import termios
 import getopt
 import select
 import re
+import string
 
 # Default TTY and Formatting Options
 TTY_Options = {'baudrate': 9600, 'databits': 8, 'stopbits': 1, 'parity': "none", 'flowcontrol': "none"}
-Format_Options = {'hexmode': False, 'txnl': "raw", 'rxnl': "raw", 'hexnl': False, 'echo': False}
+Format_Options = {'splitmode': False, 'splitfullmode': False, 'hexmode': False, 'txnl': "raw", 'rxnl': "raw", 'hexnl': False, 'echo': False}
 Color_Chars = {}
 Console_Newline = os.linesep
 
 # Number of columns in hex mode
-Hexmode_Columns = 32
+Hexmode_Columns = 16
 
 # ssterm Quit Escape Character, Ctrl-[ = 0x1B
 Quit_Escape_Character = 0x1B
@@ -157,9 +158,9 @@ def fd_read(fd, n):
 
 def fd_write(fd, data):
 	try:
-		return os.write(fd, data)
+		return (os.write(fd, data), None)
 	except OSError, err:
-		return -1
+		return (-1, str(err))
 
 ###########################################################################
 ### Read/Write Loop
@@ -172,6 +173,7 @@ txnl_sub = None
 rxnl_match = None
 stdout_nl_match_save = ''
 stdout_cursor_x = 0
+stdout_split_bytes = []
 
 def console_init():
 	global stdin_fd, txnl_sub, rxnl_match
@@ -221,9 +223,29 @@ def console_init():
 	# "raw" requires no match
 	else: rxnl_match = None
 
+def console_reset():
+	# Reset stdin terminal for canonical input, echo, and signals
+
+	# Get the current stdin tty options
+	# Format: [iflag, oflag, cflag, lflag, ispeed, ospeed, cc]
+	try:
+		stdin_attr = termios.tcgetattr(stdin_fd)
+	except termios.TermiosError, err:
+		sys.stderr.write("Error: getting stdin tty options: %s\n" % str(err))
+		return -1
+
+	# Enable canonical input, echo, signals -- stdin_attr[cflag]
+	stdin_attr[3] |= (termios.ICANON | termios.ECHO | termios.ECHOE | termios.ISIG)
+
+	# Set the new stdin tty attributes
+	try:
+		termios.tcsetattr(stdin_fd, termios.TCSANOW, stdin_attr)
+	except termios.TermiosError, err:
+		sys.stderr.write("Error: setting stdin tty options: %s\n" % str(err))
+		return -1
 
 def console_formatted_print(data):
-	global stdout_nl_match_save, stdout_cursor_x
+	global stdout_nl_match_save, stdout_cursor_x, stdout_split_bytes
 
 	if len(data) == 0:
 		return
@@ -266,6 +288,67 @@ def console_formatted_print(data):
 			if x == Console_Newline and Format_Options['hexnl']:
 				sys.stdout.write(Console_Newline)
 				stdout_cursor_x = 0
+
+	# Convert to split ASCII-hex if we're in split mode
+	elif Format_Options['splitmode'] or Format_Options['splitfullmode']:
+		# Only print partial strings if we're not in split full mode
+		if not Format_Options['splitfullmode']:
+			# Delete the current window if we had printed an incomplete one
+			if len(stdout_split_bytes) > 0:
+				sys.stdout.write("\r")
+
+		def split_print(byte_list):
+			# split_print() expects:
+			# 1 <= len(byte_list) <= Hexmode_Columns
+
+			# Print the hexadecimal representation
+			for i in range(len(byte_list)):
+				# Color code this character if it's in our color chars dictionary
+				if len(Color_Chars) > 0 and ord(byte_list[i]) in Color_Chars:
+					sys.stdout.write(Color_Codes[Color_Chars[ord(byte_list[i])]] + ("%02X" % ord(byte_list[i])) + Color_Code_Reset)
+				else:
+					sys.stdout.write("%02X" % ord(byte_list[i]))
+
+				# Pretty print into two columns
+				if (i+1) == Hexmode_Columns/2:
+					sys.stdout.write("  ")
+				else:
+					sys.stdout.write(" ")
+
+			# Fill up the rest of the hexadecimal representation
+			# with blank space
+			if len(byte_list) < Hexmode_Columns/2:
+				# Account for the print print separator
+				sys.stdout.write(" " + " "*(3*(Hexmode_Columns-len(byte_list))))
+			elif len(byte_list) < Hexmode_Columns:
+				sys.stdout.write(" "*(3*(Hexmode_Columns-len(byte_list))))
+
+			# Print the ASCII representation
+			sys.stdout.write("  |")
+			for i in range(len(byte_list)):
+				if (byte_list[i] in string.letters+string.digits+string.punctuation+' '):
+					sys.stdout.write(byte_list[i])
+				else:
+					sys.stdout.write(".")
+			sys.stdout.write("|")
+
+		for x in list(data):
+			# Add to our split byte window
+			stdout_split_bytes.append(x)
+			# If we get a full column window, print it out with a
+			# newline
+			if (len(stdout_split_bytes) == Hexmode_Columns):
+				split_print(stdout_split_bytes)
+				sys.stdout.write(Console_Newline)
+				stdout_split_bytes = []
+
+		# Only print partial strings if we're not in split full mode
+		if not Format_Options['splitfullmode']:
+			# Print out any bytes left in our window
+			if len(stdout_split_bytes) > 0:
+				split_print(stdout_split_bytes)
+
+
 	# Normal print
 	else:
 		# Apply Color coding if necessary
@@ -298,7 +381,7 @@ def console_read_write_loop():
 			if retval < 0:
 				sys.stderr.write("Error: reading stdin: %s\n" % buff)
 				break
-			if len(buff) > 0:
+			if buff and len(buff) > 0:
 				# Perform transmit newline subsitutions if
 				# necessary FIXME: This assumes a single
 				# character platform newline.
@@ -311,17 +394,17 @@ def console_read_write_loop():
 					break
 
 				# Write the buffer to the serial port
-				retval = fd_write(serial_fd, buff)
+				retval, err = fd_write(serial_fd, buff)
 				if retval < 0:
-					sys.stderr.write("Error: writing to serial port: %s\n" % buff)
+					sys.stderr.write("Error: writing to serial port: %s\n" % err)
 
 		if serial_fd in ready_read_fds:
-			# Read a buffer from stdin
+			# Read a buffer from the serial port
 			retval, buff = fd_read(serial_fd, READ_BUFF_SIZE)
 			if retval < 0:
 				sys.stderr.write("Error: reading serial port: %s\n" % buff)
 				break
-			if len(buff) > 0:
+			if buff and len(buff) > 0:
 				console_formatted_print(buff)
 
 
@@ -350,7 +433,10 @@ Written by Vanya A. Sergeev - <vsergeev@gmail.com>.\n\
   --rx-nl <match>               Specify the receive newline match\n\
                                  [raw, cr, lf, crlf, crorlf]\n\
   -e, --echo                    Turn on local character echo\n\
-  -x, --hex                     Turn on hexadecimal representation mode\n\
+  -s, --split                   Turn on split ASCII/hexadecimal mode\n\
+  --split-full			Turn on split ASCII/hexadecimal mode with full\n\
+                                 lines (good for piping)\n\
+  -x, --hex                     Turn on hexadecimal mode\n\
   --hex-nl                      Turn on newlines in hexadecimal mode\n\
 \n\
   -h, --help                    Display this usage/help\n\
@@ -364,10 +450,11 @@ Color Code Sequence (fg/bg):\n\
 \n\
 Default Options:\n\
  baudrate: 9600 | databits: 8 | parity: none | stopbits: 1 | flow control: none\n\
- tx newline: raw | rx newline: raw | local echo: off | hexmode: off\n"
+ tx newline: raw | rx newline: raw | local echo: off\n\
+ split mode: off | hex mode: off\n"
 
 def print_version():
-	print "ssterm version 1.3 - 03/19/2012"
+	print "ssterm version 1.4 - 03/28/2012"
 
 def int_handled(x, base=10):
 	try:
@@ -377,7 +464,7 @@ def int_handled(x, base=10):
 
 # Parse options
 try:
-	options, args = getopt.getopt(sys.argv[1:], "b:d:p:t:f:exhvc:", ["baudrate=", "databits=", "parity=", "stopbits=", "flowcontrol=", "tx-nl=", "rx-nl=", "echo", "hex", "hex-nl", "color-nl", "help", "version", "color="])
+	options, args = getopt.getopt(sys.argv[1:], "b:d:p:t:f:esxhvc:", ["baudrate=", "databits=", "parity=", "stopbits=", "flowcontrol=", "tx-nl=", "rx-nl=", "echo", "split", "split-full", "hex", "hex-nl", "color-nl", "help", "version", "color="])
 except getopt.GetoptError, err:
 	print str(err), "\n"
 	print_usage()
@@ -413,6 +500,12 @@ for opt_c, opt_arg in options:
 	elif opt_c in ("-e", "--echo"):
 		Format_Options['echo'] = True
 
+	elif opt_c in ("-s", "--split"):
+		Format_Options['splitmode'] = True
+
+	elif opt_c in ("--split-full"):
+		Format_Options['splitfullmode'] = True
+
 	elif opt_c in ("-x", "--hex"):
 		Format_Options['hexmode'] = True
 
@@ -428,11 +521,11 @@ for opt_c, opt_arg in options:
 			elif len(c) > 2 and c[0:2] == "0x":
 				c_int = int_handled(c, 16)
 				if c_int == None:
-					sys.stderr.write("Error: Unknown color code character: %s" % c)
+					sys.stderr.write("Error: Unknown color code character: %s\n" % c)
 					sys.exit(-1)
 				Color_Chars[c_int] = len(Color_Chars)
 			else:
-				sys.stderr.write("Error: Unknown color code character: %s" % c)
+				sys.stderr.write("Error: Unknown color code character: %s\n" % c)
 				sys.exit(-1)
 
 	elif opt_c == "--tx-nl":
@@ -474,6 +567,7 @@ if (serial_fd < 0):
 console_init()
 console_read_write_loop()
 sys.stdout.write("\n")
+console_reset()
 
 # Close the serial port
 serial_close(serial_fd)
