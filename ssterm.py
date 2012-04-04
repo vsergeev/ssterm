@@ -398,7 +398,7 @@ def console_read_write_loop():
 					buff = ''.join(buff)
 
 				# If we detect the escape character, then quit
-				if chr(Quit_Escape_Character) in buff:
+				if chr(Quit_Escape_Character) in buff and len(buff)==1:
 					break
 
 				# Write the buffer to the serial port
