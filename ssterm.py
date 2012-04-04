@@ -265,7 +265,7 @@ def console_formatted_print(data):
 			stdout_nl_match_save = data[-1]
 			data = data[0:-1]
 
-	# Convert to hex if we're in hex mode
+	# Print in hex if we're in hex mode
 	if Format_Options['hexmode']:
 		for x in list(data):
 			# Color code this character if it's in our color chars dictionary
@@ -289,7 +289,7 @@ def console_formatted_print(data):
 				sys.stdout.write(Console_Newline)
 				stdout_cursor_x = 0
 
-	# Convert to split hex-ASCII if we're in split mode
+	# Print in split hex-ASCII if we're in split mode
 	elif Format_Options['splitmode'] or Format_Options['splitfullmode']:
 		# Only print partial strings if we're not in split full mode
 		if not Format_Options['splitfullmode']:
@@ -357,7 +357,7 @@ def console_formatted_print(data):
 				split_print(stdout_split_bytes)
 
 
-	# Normal print
+	# Print normal ASCII mode
 	else:
 		# Apply Color coding if necessary
 		if len(Color_Chars) > 0:
@@ -405,6 +405,7 @@ def console_read_write_loop():
 				retval, err = fd_write(serial_fd, buff)
 				if retval < 0:
 					sys.stderr.write("Error: writing to serial port: %s\n" % err)
+					break
 
 		if serial_fd in ready_read_fds:
 			# Read a buffer from the serial port

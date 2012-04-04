@@ -18,16 +18,18 @@ ssterm is a console-based simple serial port terminal. It features painless
 serial port configuration, no dependencies outside of a standard Python 2
 installation, is contained in a single file, and provides a variety of useful
 input/output features:
+	- plain ASCII representation
 	- split hexadecimal/ASCII representation
 	- pure hexadecimal representation with optional newline interpretation
-	- color coding bytes in all three split, hexadecimal, and ASCII modes
+	- color coding bytes in all three ASCII, split, and hexadecimal modes
 	- raw terminal with control character forwarding
 	- transmit newline character remapping (e.g. LF -> CRLF)
 	- receive newline character remapping (e.g. CR -> LF)
 	- local character echo
 
-ssterm is written in Python 2, and should work on most *nix platforms.  Feel
-free to send any bugs, ideas, or suggestions to vsergeev at gmail dot com.
+ssterm was written in Python 2, and should work on most *nix platforms. It is
+works with both CPython and pypy implementations of Python. Feel free to send
+any bugs, ideas, or suggestions to vsergeev at gmail dot com.
 
 2. USAGE
 ================================================================================
