@@ -5,10 +5,11 @@ Vanya A. Sergeev - vsergeev at gmail
 Table of Contents
 
 1. ABOUT ssterm
-2. USAGE
-3. LICENSE
-4. USING ssterm
-5. Example Usage
+2. INSTALLING
+3. USAGE
+4. LICENSE
+5. USING ssterm
+6. Example Usage
 ================================================================================
 
 1. ABOUT ssterm
@@ -31,7 +32,19 @@ ssterm was written in Python 2, and should work on most *nix platforms. It
 works with both CPython and pypy implementations of Python. Feel free to send
 any bugs, ideas, or suggestions to vsergeev at gmail dot com.
 
-2. USAGE
+2. INSTALLING
+================================================================================
+
+Install ssterm to /usr/local/bin (requires root):
+# make install
+
+Remove ssterm from /usr/local/bin (requires root):
+# make uninstall
+
+Install ssterm to an alternate prefix, such as /usr:
+# make install PREFIX=/usr
+
+3. USAGE
 ================================================================================
 
 Usage: ./ssterm.py [options] <serial port>
@@ -81,7 +94,7 @@ Default Options:
  split mode: off | hex mode: off   | color code: off
 
 
-3. LICENSE
+4. LICENSE
 ================================================================================
 
 ssterm is released under the GNU General Public License Version 3.
@@ -89,7 +102,7 @@ ssterm is released under the GNU General Public License Version 3.
     along with this program; see the file "COPYING".  If not, see
     <http://www.gnu.org/licenses/>.
 
-4. USING ssterm
+5. USING ssterm
 ================================================================================
 
 By default, ssterm will open the specified serial port with 9600 baudrate, 8
@@ -148,7 +161,7 @@ The default transmit newline character mapping (--rx-nl option) is raw.
 
 Other options include local character echo, which is off by default.
 
-5. Example Usage
+6. Example Usage
 ================================================================================
 
 Typical usage with defaults (9600 8N1, no flow control):
