@@ -27,7 +27,7 @@ input/output features:
 	- receive newline character remapping (e.g. CR -> LF)
 	- local character echo
 
-ssterm was written in Python 2, and should work on most *nix platforms. It is
+ssterm was written in Python 2, and should work on most *nix platforms. It
 works with both CPython and pypy implementations of Python. Feel free to send
 any bugs, ideas, or suggestions to vsergeev at gmail dot com.
 
