@@ -1,5 +1,5 @@
 README
-ssterm - Version 1.4 - 03/28/2012
+ssterm - Version 1.5 - 04/04/2012
 Vanya A. Sergeev - vsergeev at gmail
 ================================================================================
 Table of Contents
@@ -69,7 +69,7 @@ Written by Vanya A. Sergeev - <vsergeev@gmail.com>.
   -v, --version                 Display the program's version
 
 
-Quit Escape Character:          Ctrl-[
+Quit Escape Character:          Ctrl-]
 
 Color Code Sequence (fg/bg):
  Black/Red, Black/Green, Black/Yellow, White/Blue, White/Magenta,
@@ -101,7 +101,7 @@ ssterm opens the input terminal in raw mode, so all characters and control
 signals are passed through transparently to the serial port. This enables
 interacting with terminal interfaces over the serial port that interpret
 control characters, such as a *nix termios on an embedded system. The only
-exception is Ctrl-[, which serves as ssterm's quit escape character.
+exception is Ctrl-], which serves as ssterm's quit escape character.
 
 ssterm can display output in split hexadecimal/ASCII mode, with the -s or
 --split option. This mode will format data in the split mode as it is received,

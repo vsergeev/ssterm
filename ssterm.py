@@ -1,7 +1,7 @@
 #!/usr/bin/python2
 
 # ssterm - simple serial-port terminal
-# Version 1.4 - March 2012
+# Version 1.5 - April 2012
 # Written by Vanya A. Sergeev - <vsergeev@gmail.com>
 #
 # Copyright (C) 2007-2012 Vanya A. Sergeev
@@ -36,8 +36,8 @@ Console_Newline = os.linesep
 # Number of columns in hex mode
 Hexmode_Columns = 16
 
-# ssterm Quit Escape Character, Ctrl-[ = 0x1B
-Quit_Escape_Character = 0x1B
+# ssterm Quit Escape Character, Ctrl-] = 0x1D
+Quit_Escape_Character = 0x1D
 
 # Default color codes: Black/Red, Black/Green, Black/Yellow, White/Blue,
 #  White/Magenta, Black/Cyan, Black/White
@@ -456,7 +456,7 @@ Written by Vanya A. Sergeev - <vsergeev@gmail.com>.\n\
   -h, --help                    Display this usage/help\n\
   -v, --version                 Display the program's version\n\n"
 	print "\
-Quit Escape Character:          Ctrl-[\n\
+Quit Escape Character:          Ctrl-]\n\
 \n\
 Color Code Sequence (fg/bg):\n\
  Black/Red, Black/Green, Black/Yellow, White/Blue, White/Magenta,\n\
@@ -468,7 +468,7 @@ Default Options:\n\
  split mode: off | hex mode: off   | color code: off\n"
 
 def print_version():
-	print "ssterm version 1.4 - 03/28/2012"
+	print "ssterm version 1.5 - 04/04/2012"
 
 def int_handled(x, base=10):
 	try:

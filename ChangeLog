@@ -1,3 +1,11 @@
+Release 1.5 - 04/04/2012
+ - Fixed escape character bug. Switched escape character from Ctrl-[ to the
+   more unique Ctrl-], which does not serve as the escape code for many other
+   special keys and cause ssterm to quit on them like Ctrl-[ did. Thanks to
+   zzazang for discovering this bug.
+ - Modified split hexadecimal/ASCII representation mode to conform to "hexdump
+   -C" canonical split output.
+
 Release 1.4 - 03/28/2012
  - Added support for split hexadecimal/ASCII representation mode.
  - Added controlling terminal reset after program quit.
