@@ -47,7 +47,7 @@ Install ssterm to an alternate prefix, such as /usr:
 3. USAGE
 ================================================================================
 
-Usage: ./ssterm.py [options] <serial port>
+Usage: ssterm [options] <serial port device>
 
 ssterm - simple serial-port terminal
 Written by Vanya A. Sergeev - <vsergeev@gmail.com>.

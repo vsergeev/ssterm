@@ -188,8 +188,9 @@ def console_init():
 		sys.stderr.write("Error: getting stdin tty options: %s\n" % str(err))
 		return -1
 
-	# Disable canonical input, so we can send characters without a
-	# line feed, and disable echo -- stdin_attr[cflag]
+	# Disable canonical input, so we can send characters without a line
+	# feed, disable signal interpretation, and disable echo
+	# -- stdin_attr[cflag]
 	stdin_attr[3] &= ~(termios.ICANON | termios.ECHO | termios.ECHOE | termios.ISIG)
 	# Turn off XON/XOFF interpretation so they pass through to the serial
 	# port -- stdin_attr[iflag]
@@ -356,7 +357,6 @@ def console_formatted_print(data):
 			if len(stdout_split_bytes) > 0:
 				split_print(stdout_split_bytes)
 
-
 	# Print normal ASCII mode
 	else:
 		# Apply Color coding if necessary
@@ -413,6 +413,8 @@ def console_read_write_loop():
 			if retval < 0:
 				sys.stderr.write("Error: reading serial port: %s\n" % buff)
 				break
+
+			# Format and print the buffer to the console
 			if buff and len(buff) > 0:
 				console_formatted_print(buff)
 
@@ -422,7 +424,7 @@ def console_read_write_loop():
 ###########################################################################
 
 def print_usage():
-	print "Usage: %s [options] <serial port>\n" % sys.argv[0]
+	print "Usage: %s [options] <serial port device>\n" % sys.argv[0]
 	print "\
 ssterm - simple serial-port terminal\n\
 Written by Vanya A. Sergeev - <vsergeev@gmail.com>.\n\
