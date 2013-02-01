@@ -1,6 +1,8 @@
 PREFIX=/usr/local
 BINDIR=$(PREFIX)/bin
 
+all:
+
 install:
 	install -D -m 0755 ssterm.py $(DESTDIR)$(BINDIR)/ssterm
 
