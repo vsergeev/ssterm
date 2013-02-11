@@ -464,18 +464,18 @@ Written by Vanya A. Sergeev - <vsergeev@gmail.com>.\n\
  Formatting Options:\n\
   -s, --split                   Split hexadecimal/ASCII mode\n\
 \n\
-  --split-full            Split hexadecimal/ASCII mode with full lines\n\
-                                 (good for piping)\n\
+  --split-full                  Split hexadecimal/ASCII mode with full lines\n\
+                                  (better for piping than --split)\n\
 \n\
   -x, --hex                     Pure hexadecimal mode\n\
-  --hex-nl                      Print newlines in pure hexadecimal mode\n\
+  --hex-nl                      Print newlines while in pure hexadecimal mode\n\
 \n\
   -c, --color <list>            Specify comma-delimited list of characters in\n\
-                                 ASCII or hex to color code: A,$,0x0d,0x0a,...\n\
+                                  ASCII or hex to color code: A,$,0x0d,0x0a,...\n\
 \n\
-  --tx-nl <substitution>        Specify the transmit newline substitution\n\
+  --tx-nl <substitution>        Specify transmit newline substitution\n\
                                   [raw, none, cr, lf, crlf]\n\
-  --rx-nl <match>               Specify the receive newline match\n\
+  --rx-nl <match>               Specify receive newline match\n\
                                   [raw, cr, lf, crlf, crorlf]\n\
 \n\
   -e, --echo                    Turn on local character echo\n\
@@ -553,8 +553,10 @@ for opt_c, opt_arg in options:
             sys.exit(-1)
         # Parse ASCII and hex encoded characters into our Color_Chars dictionary
         for c in opt_arg:
+            # ASCII character
             if len(c) == 1:
                 Color_Chars[ord(c)] = len(Color_Chars)
+            # Hexadecimal number
             elif len(c) > 2 and c[0:2] == "0x":
                 try:
                     c_int = int(c, 16)
@@ -562,6 +564,7 @@ for opt_c, opt_arg in options:
                     sys.stderr.write("Error: Unknown color code character: %s\n" % c)
                     sys.exit(-1)
                 Color_Chars[c_int] = len(Color_Chars)
+            # Unknown
             else:
                 sys.stderr.write("Error: Unknown color code character: %s\n" % c)
                 sys.exit(-1)
@@ -592,7 +595,7 @@ for opt_c, opt_arg in options:
         sys.exit(0)
 
 
-# Make sure the serial port device is specified
+# Make sure a serial port device is specified
 if len(args) < 1:
     print_usage()
     sys.exit(-1)
