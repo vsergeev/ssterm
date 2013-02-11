@@ -1,3 +1,8 @@
+Release 1.6 - 02/11/2013
+ - Switched to gnu_getopt to allow command-line options after serial port
+   device argument.
+ - Refactored codebase.
+
 Release 1.5 - 04/04/2012
  - Fixed escape character bug. Switched escape character from Ctrl-[ to the
    more unique Ctrl-], which does not serve as the escape code for many other

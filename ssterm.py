@@ -1,10 +1,10 @@
 #!/usr/bin/python2
 
 # ssterm - simple serial-port terminal
-# Version 1.5 - April 2012
+# Version 1.6 - February 2013
 # Written by Vanya A. Sergeev - <vsergeev@gmail.com>
 #
-# Copyright (C) 2007-2012 Vanya A. Sergeev
+# Copyright (C) 2007-2013 Vanya A. Sergeev
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 3 of the License, or
@@ -271,6 +271,24 @@ def format_rx_sub(data, match):
 stdout_cursor_x = 0
 stdout_split_bytes = []
 
+def format_print_normal(stdout_fd, data):
+    # Apply Color coding if necessary
+    if len(Color_Chars) > 0:
+        # Unfortunately, for generality, we can't do a global
+        # regex substitution on data with the color-coded
+        # version, since we could have potentially selected
+        # color code characters that are present in the ANSI
+        # color escape sequences. So we operate on the data
+        # a char at time here.
+        for x in list(data):
+            # Color code this character if it's in our color chars dictionary
+            if ord(x) in Color_Chars:
+                fd_write(stdout_fd, Color_Codes[Color_Chars[ord(x)]] + x + Color_Code_Reset)
+            else:
+                fd_write(stdout_fd, x)
+    else:
+        fd_write(stdout_fd, data)
+
 def format_print_hexmode(stdout_fd, data):
     global stdout_cursor_x
 
@@ -298,11 +316,11 @@ def format_print_hexmode(stdout_fd, data):
             fd_write(stdout_fd, Console_Newline)
             stdout_cursor_x = 0
 
-def format_print_splitmode(stdout_fd, data, partialprint=True):
+def format_print_splitmode(stdout_fd, data, partial_print=True):
     global stdout_split_bytes
 
     # Erase partially completed strings with \r
-    if partialprint:
+    if partial_print:
         if len(stdout_split_bytes) > 0:
             fd_write(stdout_fd, "\r")
 
@@ -360,35 +378,17 @@ def format_print_splitmode(stdout_fd, data, partialprint=True):
             stdout_split_bytes = []
 
     # Print partially completed strings
-    if partialprint:
+    if partial_print:
         # Print out any bytes left in our window
         if len(stdout_split_bytes) > 0:
             split_print(stdout_split_bytes)
-
-def format_print_normal(stdout_fd, data):
-    # Apply Color coding if necessary
-    if len(Color_Chars) > 0:
-        # Unfortunately, for generality, we can't do a global
-        # regex substitution on data with the color-coded
-        # version, since we could have potentially selected
-        # color code characters that are present in the ANSI
-        # color escape sequences. So we operate on the data
-        # a char at time here.
-        for x in list(data):
-            # Color code this character if it's in our color chars dictionary
-            if ord(x) in Color_Chars:
-                fd_write(stdout_fd, Color_Codes[Color_Chars[ord(x)]] + x + Color_Code_Reset)
-            else:
-                fd_write(stdout_fd, x)
-    else:
-        fd_write(stdout_fd, data)
 
 ###########################################################################
 ### Read/Write Loop
 ###########################################################################
 
 def read_write_loop(serial_fd, stdin_fd, stdout_fd):
-    # Look up our newline sub and match
+    # Look up our TX newline sub and RX newline match
     txnl_sub = TX_Newline_Sub[Format_Options['txnl']]
     rxnl_match = RX_Newline_Match[Format_Options['rxnl']]
 
@@ -396,7 +396,7 @@ def read_write_loop(serial_fd, stdin_fd, stdout_fd):
     if Format_Options['hexmode']:
         format_print = format_print_hexmode
     elif Format_Options['splitmode']:
-        format_print = lambda s, d: format_print_splitmode(s, d, True)
+        format_print = format_print_splitmode
     elif Format_Options['splitfullmode']:
         format_print = lambda s, d: format_print_splitmode(s, d, False)
     else:
@@ -495,11 +495,11 @@ Default Options:\n\
  split mode: off | hex mode: off   | color code: off\n"
 
 def print_version():
-    print "ssterm version 1.5 - 04/04/2012"
+    print "ssterm version 1.6 - 02/11/2013"
 
 # Parse options
 try:
-    options, args = getopt.getopt(sys.argv[1:], "b:d:p:t:f:esxhvc:", ["baudrate=", "databits=", "parity=", "stopbits=", "flowcontrol=", "tx-nl=", "rx-nl=", "echo", "split", "split-full", "hex", "hex-nl", "color-nl", "help", "version", "color="])
+    options, args = getopt.gnu_getopt(sys.argv[1:], "b:d:p:t:f:esxhvc:", ["baudrate=", "databits=", "parity=", "stopbits=", "flowcontrol=", "tx-nl=", "rx-nl=", "echo", "split", "split-full", "hex", "hex-nl", "color-nl", "help", "version", "color="])
 except getopt.GetoptError, err:
     print str(err), "\n"
     print_usage()
