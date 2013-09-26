@@ -28,7 +28,7 @@ import re
 import string
 
 # Default TTY and Formatting Options
-TTY_Options = {'baudrate': 9600, 'databits': 8, 'stopbits': 1, 'parity': "none", 'flowcontrol': "none"}
+TTY_Options = {'baudrate': 115200, 'databits': 8, 'stopbits': 1, 'parity': "none", 'flowcontrol': "none"}
 Format_Options = {'splitmode': False, 'splitfullmode': False, 'hexmode': False, 'txnl': "raw", 'rxnl': "raw", 'hexnl': False, 'echo': False}
 Color_Chars = {}
 Console_Newline = os.linesep
@@ -490,7 +490,7 @@ Color Code Sequence (fg/bg):\n\
  Black/Cyan, Black/White\n\
 \n\
 Default Options:\n\
- baudrate: 9600 | databits: 8 | parity: none | stopbits: 1 | flow ctrl: none\n\
+ baudrate: 115200 | databits: 8 | parity: none | stopbits: 1 | flow ctrl: none\n\
  tx newline: raw | rx newline: raw | local echo: off\n\
  split mode: off | hex mode: off   | color code: off\n"
 
