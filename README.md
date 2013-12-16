@@ -1,6 +1,6 @@
 ## ABOUT ssterm
 
-ssterm is a console-based simple serial port terminal. It features painless serial port configuration, no dependencies outside of a standard Python 2 installation, is contained in a single file, and provides a variety of useful input/output features:
+ssterm is a simple console-based serial port terminal. It features painless serial port configuration, no dependencies outside of a standard Python 2 installation, a variety of useful input/output features:
 
   * plain ASCII representation
   * split hexadecimal/ASCII representation
@@ -11,7 +11,7 @@ ssterm is a console-based simple serial port terminal. It features painless seri
   * receive newline character remapping (e.g. CR -> LF)
   * local character echo
 
-ssterm was written in Python 2, and should work on most *nix platforms. It works with both CPython and pypy implementations of Python. Feel free to send any bugs, ideas, or suggestions to vsergeev at gmail dot com.
+ssterm is written in Python 2, and should work on most *nix platforms. It works with both CPython and pypy implementations of Python. Feel free to send any bugs, ideas, or suggestions to vsergeev at gmail or the [GitHub issues page](https://github.com/vsergeev/ssterm/issues/).
 
 ## USAGE
 
@@ -71,13 +71,15 @@ ssterm is released under the GNU General Public License Version 3.
 
 ## USING ssterm
 
-By default, ssterm will open the specified serial port with 9600 baudrate, 8 data bits, no parity, 1 stop bit, and no flow control. These settings can be adjusted with the `-b` / `--baudrate`, `-d` / `--databits`, `-p` / `--parity`, `-t` / `--stopbits`, and `-f` / `--flow-control` options (see usage below).
+By default, ssterm will open the specified serial port with 115200 baudrate, 8 data bits, no parity, 1 stop bit, and no flow control. These settings can be adjusted with the `-b` / `--baudrate`, `-d` / `--databits`, `-p` / `--parity`, `-t` / `--stopbits`, and `-f` / `--flow-control` options (see usage below).
 
-ssterm opens the input terminal in raw mode, so all characters and control signals are passed through transparently to the serial port. This enables interacting with terminal interfaces over the serial port that interpret control characters, such as a *nix termios on an embedded system. The only exception is Ctrl-], which serves as ssterm's quit escape character.
+ssterm opens the input terminal in raw mode, so all characters and control signals are passed through transparently to the serial port. This enables interacting with terminal interfaces over the serial port that interpret control characters, such as a Linux termios on an embedded system. The only exception is Ctrl-], which serves as ssterm's quit escape character.
 
-ssterm can display output in split hexadecimal/ASCII mode, with the `-s` or `--split` option. This mode will format data in the split mode as it is received, updating the hexadecimal and ASCII columns by clearing and re-drawing the line until it is full width.  For a split hexadecimal/ASCII representation suitable for piping to another program or file, `--split-full` should be used, to limit printing to full column lines.
+ssterm can display output in split hexadecimal/ASCII mode, with the `-s` or `--split` option. This mode will format data in the split mode as it is received, updating the hexadecimal and ASCII columns by clearing and re-drawing the line until it is full width.  For a split hexadecimal/ASCII representation suitable for piping to another program or file, `--split-full` should be used, to print full column width data without re-drawing.
 
-ssterm can color code particular characters, specified by a comma-delimited list with the `-c` or `--color` option. The list can contain ASCII entries (e.g.  `a,_,A,...`), as well as hexadecimal entries (e.g. `0x0a,0xff,...`). There is currently a maximum of seven distinct colors, assigned sequentially to the specified characters in the following order (foreground/background): Black/Red, Black/Green, Black/Yellow, White/Blue, White/Magenta, Black/Cyan, Black/White.  ssterm can also display output in pure hexadecimal mode, with the `-x` or `--hex` option, and interpret newlines in this mode with the `--hex-nl` option.
+ssterm can color code particular characters, specified by a comma-delimited list with the `-c` or `--color` option. The list can contain ASCII entries (e.g.  `a,_,A,...`), as well as hexadecimal entries (e.g. `0x0a,0xff,...`). There is currently a maximum of seven distinct colors, assigned sequentially to the specified characters in the following order (foreground/background): Black/Red, Black/Green, Black/Yellow, White/Blue, White/Magenta, Black/Cyan, Black/White.
+
+ssterm can also display output in pure hexadecimal mode, with the `-x` or `--hex` option, and interpret newlines in this mode with the `--hex-nl` option.
 
 Plain ASCII representation mode is default.
 
@@ -106,7 +108,7 @@ Other options include local character echo, which is off by default.
 
 ## Example Usage
 
-Typical usage with defaults (9600 8N1, no flow control):
+Typical usage with defaults (115200 8N1, no flow control):
 
     $ ssterm /dev/ttyUSB0
 
@@ -175,7 +177,7 @@ Split representation mode:
     e1 e2 e3 e4 e5 e6 e7 e8  e9 ea eb ec ed ee ef f0  |................|
     f1 f2 f3 f4 f5 f6 f7 f8  f9 fa fb fc fd fe ff     |...............|
 
-Split representation mode with color coding:
+Split representation mode with character color coding:
 
     $ ssterm -s -c 0x0A,{,g,0xAE /dev/ttyUSB0
 
@@ -199,7 +201,7 @@ Hexadecimal representation mode:
     39 2c 2c 2a 32 45 0d 0a  24 47 50 47 47 41 2c 30
     38 
 
-Hexadecimal representation mode, with newline interpretation and color coding:
+Hexadecimal representation mode, with newline interpretation and character color coding:
 
     $ ssterm -x --hex-nl -c $,0x0a,0x0d /dev/ttyUSB0
 
