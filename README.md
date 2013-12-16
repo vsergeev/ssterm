@@ -57,7 +57,7 @@ ssterm was written in Python 2, and should work on most *nix platforms. It works
      Black/Cyan, Black/White
     
     Default Options:
-     baudrate: 9600 | databits: 8 | parity: none | stopbits: 1 | flow ctrl: none
+     baudrate: 115200 | databits: 8 | parity: none | stopbits: 1 | flow ctrl: none
      tx newline: raw | rx newline: raw | local echo: off
      split mode: off | hex mode: off   | color code: off
 
