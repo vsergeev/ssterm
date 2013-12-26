@@ -3,8 +3,10 @@
 # ssterm - simple serial-port terminal
 # Version 1.7 - December 2013
 # Written by Vanya A. Sergeev - <vsergeev@gmail.com>
+# https://github.com/vsergeev/ssterm
 #
 # Copyright (C) 2007-2013 Vanya A. Sergeev
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 3 of the License, or
@@ -43,10 +45,9 @@ TTY_Options = {
 
 # Default Formatting Options
 Format_Options = {
-                'print_mode': 'normal',   # 'split', 'split_full_lines', # 'hexadecimal'
+                'print_mode': 'normal',   # 'split', 'split_full_lines', 'hexadecimal', 'hexadecimal_newline'
                 'transmit_newline': "raw",
                 'receive_newline': "raw",
-                'hex_newline': False,
                 'echo': False
             }
 
@@ -94,7 +95,7 @@ def serial_open(device_path, tty_options):
         sys.stderr.write("Error opening serial port: %s\n" % str(err))
         return -1
 
-    # Get the current tty options
+    # Get current termios attributes
     #   [iflag, oflag, cflag, lflag, ispeed, ospeed, cc]
     try:
         tty_attr = termios.tcgetattr(fd)
@@ -102,8 +103,12 @@ def serial_open(device_path, tty_options):
         sys.stderr.write("Error getting serial port options: %s\n" % str(err))
         return -1
 
-    # Reset attributes structure cflag -- tty_attr[cflag]
-    tty_attr[2] = 0
+    ######################################################################
+    ### cflag, ispeed, ospeed
+    ######################################################################
+
+    # Reset cflag: Enable receiver, ignore modem control lines
+    tty_attr[2] = (termios.CREAD | termios.CLOCAL)
 
     # Look up the termios baudrate and set it in the attributes structure
     #   tty_attr[cflag], tty_attr[ispeed], tty_attr[ospeed]
@@ -120,6 +125,7 @@ def serial_open(device_path, tty_options):
         1500000: 0x100A, 2000000: 0x100B, 2500000: 0x100C,
         3000000: 0x100D, 3500000: 0x100E, 4000000: 0x100F,
         }
+
     if tty_options['baudrate'] in termios_baudrates:
         tty_attr[2] |= termios_baudrates[tty_options['baudrate']]
         tty_attr[4] = termios_baudrates[tty_options['baudrate']]
@@ -157,16 +163,25 @@ def serial_open(device_path, tty_options):
     if termios_cflag_map_and_set(termios_flowcontrol, tty_options['flowcontrol'], "Error Invalid tty flow control!\n") < 0:
         return -1
 
-    # Enable the receiver
-    tty_attr[2] |= (termios.CREAD | termios.CLOCAL)
+    ######################################################################
+    ### lflag
+    ######################################################################
 
     # Turn off signals generated for special characters, turn off canonical
     # mode so we can have raw input -- tty_attr[lflag]
     tty_attr[3] = 0
 
+    ######################################################################
+    ### oflag
+    ######################################################################
+
     # Turn off POSIX defined output processing and character mapping/delays
     # so we can have raw output -- tty_attr[oflag]
     tty_attr[1] = 0
+
+    ######################################################################
+    ### iflag
+    ######################################################################
 
     # Ignore break characters -- tty_attr[iflag]
     tty_attr[0] = termios.IGNBRK
@@ -177,7 +192,7 @@ def serial_open(device_path, tty_options):
     if tty_options['flowcontrol'] == "xonxoff":
         tty_attr[0] |= (termios.IXON | termios.IXOFF | termios.IXANY)
 
-    # Set the new tty attributes
+    # Set new termios attributes
     try:
         termios.tcsetattr(fd, termios.TCSANOW, tty_attr)
     except termios.error, err:
@@ -342,7 +357,7 @@ def format_print_normal(stdout_fd, data):
 
 # State used by format_print_hexadecimal
 stdout_cursor_x = 0
-def format_print_hexadecimal(stdout_fd, data):
+def format_print_hexadecimal(stdout_fd, data, interpret_newlines=False):
     global stdout_cursor_x
 
     for x in data:
@@ -362,12 +377,14 @@ def format_print_hexadecimal(stdout_fd, data):
         else:
             fd_write(stdout_fd, " ")
 
-        # Insert a newline if we encounter one and we're
-        # interpreting them in hex mode
+        # Insert a newline if we encounter one and we're interpreting them
         # FIXME: This assumes a single character platform newline.
-        if x == Console_Newline and Format_Options['hex_newline']:
+        if x == Console_Newline and interpret_newlines:
             fd_write(stdout_fd, Console_Newline)
             stdout_cursor_x = 0
+
+def format_print_hexadecimal_newline(stdout_fd, data):
+    format_print_hexadecimal(stdout_fd, data, interpret_newlines=True)
 
 # State used by format_print_split
 stdout_split_bytes = []
@@ -449,7 +466,13 @@ def read_write_loop(serial_fd, stdin_fd, stdout_fd):
     # Look up our TX newline sub, RX newline match, and format print function
     txnl_sub = TX_Newline_Sub[Format_Options['transmit_newline']]
     rxnl_match = RX_Newline_Match[Format_Options['receive_newline']]
-    format_print = {'normal': format_print_normal, 'split': format_print_split, 'split_full_lines': format_print_split_full_lines, 'hexadecimal': format_print_hexadecimal}[Format_Options['print_mode']]
+    format_print = {
+            'normal': format_print_normal,
+            'split': format_print_split,
+            'split_full_lines': format_print_split_full_lines,
+            'hexadecimal': format_print_hexadecimal,
+            'hexadecimal_newline': format_print_hexadecimal_newline,
+        }[Format_Options['print_mode']]
 
     # Select between serial port and stdin file descriptors
     read_fds = [serial_fd, stdin_fd]
@@ -504,30 +527,31 @@ ssterm - simple serial-port terminal\n\
 Written by Vanya A. Sergeev - <vsergeev@gmail.com>.\n\
 \n\
  Serial Port Options:\n\
-  -b, --baudrate <rate>         Specify baudrate\n\
+  -b, --baudrate <rate>         Specify baudrate (e.g., 9600, 115200, etc.)\n\
   -d, --databits <number>       Specify number of data bits [5,6,7,8]\n\
   -p, --parity <type>           Specify parity [none, odd, even]\n\
   -t, --stopbits <number>       Specify number of stop bits [1,2]\n\
   -f, --flow-control <type>     Specify flow-control [none, rtscts, xonxoff]\n\
 \n\
  Formatting Options:\n\
-  -s, --split                   Split hexadecimal/ASCII mode\n\
+  -s, --split                   Split Hexadecimal/ASCII mode\n\
 \n\
-  --split-full                  Split hexadecimal/ASCII mode with full lines\n\
+  --split-full                  Split Hexadecimal/ASCII mode with full lines\n\
                                   (better for piping than --split)\n\
 \n\
-  -x, --hex                     Pure hexadecimal mode\n\
-  --hex-nl                      Print newlines while in pure hexadecimal mode\n\
+  -x, --hex                     Hexadecimal mode\n\
+\n\
+  --hex-nl                      Hexadecimal mode with newline interpretation\n\
 \n\
   -c, --color <list>            Specify comma-delimited list of characters in\n\
-                                  ASCII or hex to color code: A,$,0x0d,0x0a,...\n\
+                                  ASCII or hex. to color code: A,$,0x0d,0x0a,...\n\
 \n\
   --tx-nl <substitution>        Specify transmit newline substitution\n\
                                   [raw, none, cr, lf, crlf]\n\
   --rx-nl <match>               Specify receive newline match\n\
                                   [raw, cr, lf, crlf, crorlf]\n\
 \n\
-  -e, --echo                    Turn on local character echo\n\
+  -e, --echo                    Enable local character echo\n\
 \n\
   -h, --help                    Display this usage/help\n\
   -v, --version                 Display the program's version\n\n"
@@ -596,6 +620,9 @@ if __name__ == '__main__':
         elif opt_c in ("-x", "--hex"):
             Format_Options['print_mode'] = 'hexadecimal'
 
+        elif opt_c == "--hex-nl":
+            Format_Options['print_mode'] = 'hexadecimal_newline'
+
         elif opt_c in ("-c", "--color"):
             opt_arg = filter(lambda x: len(x) >= 1, opt_arg.split(","))
             if len(opt_arg) > len(Color_Codes):
@@ -632,9 +659,6 @@ if __name__ == '__main__':
                 print_usage()
                 sys.exit(-1)
             Format_Options['receive_newline'] = opt_arg
-
-        elif opt_c == "--hex-nl":
-            Format_Options['hex_newline'] = True
 
         elif opt_c in ("-h", "--help"):
             print_usage()

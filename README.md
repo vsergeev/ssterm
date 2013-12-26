@@ -21,7 +21,7 @@ ssterm is written in Python 2, and should work on most *nix platforms. It works 
     Written by Vanya A. Sergeev - <vsergeev@gmail.com>.
     
      Serial Port Options:
-      -b, --baudrate <rate>         Specify baudrate
+      -b, --baudrate <rate>         Specify baudrate (e.g., 9600, 115200, etc.)
       -d, --databits <number>       Specify number of data bits [5,6,7,8]
       -p, --parity <type>           Specify parity [none, odd, even]
       -t, --stopbits <number>       Specify number of stop bits [1,2]
@@ -31,10 +31,11 @@ ssterm is written in Python 2, and should work on most *nix platforms. It works 
       -s, --split                   Split hexadecimal/ASCII mode
     
       --split-full			        Split hexadecimal/ASCII mode with full lines
-                                      (good for piping)
+                                      (better for piping than --split)
     
-      -x, --hex                     Pure hexadecimal mode
-      --hex-nl                      Print newlines in pure hexadecimal mode
+      -x, --hex                     Hexadecimal mode
+    
+      --hex-nl                      Hexadecimal mode with newline interpretation\n\
     
       -c, --color <list>            Specify comma-delimited list of characters in
                                       ASCII or hex to color code: A,$,0x0d,0x0a,...
