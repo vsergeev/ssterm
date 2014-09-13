@@ -1,11 +1,11 @@
 #!/usr/bin/env python2
 
 # ssterm - simple serial-port terminal
-# Version 1.7 - December 2013
+# Version 1.8 - September 2014
 # Written by Vanya A. Sergeev - <vsergeev@gmail.com>
 # https://github.com/vsergeev/ssterm
 #
-# Copyright (C) 2007-2013 Vanya A. Sergeev
+# Copyright (C) 2007-2014 Vanya A. Sergeev
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -79,7 +79,7 @@ READ_BUFF_SIZE = 4096
 # Console Newline
 Console_Newline = os.linesep
 
-# Newline Matches / Substitutions
+# Newline Substitution tables
 RX_Newline_Match = {'raw': None, 'cr': "\r", 'crlf': "\r\n", 'lf': "\n", 'crorlf': "\r|\n"}
 TX_Newline_Sub = {'raw': None, 'cr': "\r", 'crlf': "\r\n", 'lf': "\n", 'none': ""}
 
@@ -91,17 +91,15 @@ def serial_open(device_path, tty_options):
     # Open the tty device
     try:
         fd = os.open(device_path, os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK)
-    except OSError, err:
-        sys.stderr.write("Error opening serial port: %s\n" % str(err))
-        return -1
+    except OSError as err:
+        raise Exception("%s" % str(err))
 
     # Get current termios attributes
     #   [iflag, oflag, cflag, lflag, ispeed, ospeed, cc]
     try:
         tty_attr = termios.tcgetattr(fd)
-    except termios.error, err:
-        sys.stderr.write("Error getting serial port options: %s\n" % str(err))
-        return -1
+    except termios.error as err:
+        raise Exception("Getting serial port options: %s" % str(err))
 
     ######################################################################
     ### cflag, ispeed, ospeed
@@ -124,7 +122,7 @@ def serial_open(device_path, tty_options):
         921600: 0x1007, 1000000: 0x1008, 1152000: 0x1009,
         1500000: 0x100A, 2000000: 0x100B, 2500000: 0x100C,
         3000000: 0x100D, 3500000: 0x100E, 4000000: 0x100F,
-        }
+    }
 
     if tty_options['baudrate'] in termios_baudrates:
         tty_attr[2] |= termios_baudrates[tty_options['baudrate']]
@@ -137,31 +135,25 @@ def serial_open(device_path, tty_options):
         tty_attr[4] = tty_options['baudrate']
         tty_attr[5] = tty_options['baudrate']
 
-    # Look up and set the appropriate cflag bits in termios_options for a
-    # given option, print error message and return -1 for an invalid option
+    # Look up and set the appropriate cflag bits in termios_options for a given
+    # option
     def termios_cflag_map_and_set(termios_options, option, errmsg):
         if not option in termios_options:
-            sys.stderr.write(errmsg)
-            return -1
+            raise ValueError(errmsg)
         tty_attr[2] |= termios_options[option]
-        return 0
 
     # Look up the termios data bits and set it in the attributes structure
     termios_databits = {5: termios.CS5, 6: termios.CS6, 7: termios.CS7, 8: termios.CS8}
-    if termios_cflag_map_and_set(termios_databits, tty_options['databits'], "Error Invalid tty databits!\n") < 0:
-        return -1
+    termios_cflag_map_and_set(termios_databits, tty_options['databits'], "Invalid tty databits!")
     # Look up the termios parity and set it in the attributes structure
     termios_parity = {"none": 0, "even": termios.PARENB, "odd": termios.PARENB | termios.PARODD}
-    if termios_cflag_map_and_set(termios_parity, tty_options['parity'], "Error Invalid tty parity!\n") < 0:
-        return -1
+    termios_cflag_map_and_set(termios_parity, tty_options['parity'], "Invalid tty parity!")
     # Look up the termios stop bits and set it in the attributes structure
     termios_stopbits = {1: 0, 2: termios.CSTOPB}
-    if termios_cflag_map_and_set(termios_stopbits, tty_options['stopbits'], "Error Invalid tty stop bits!\n") < 0:
-        return -1
+    termios_cflag_map_and_set(termios_stopbits, tty_options['stopbits'], "Invalid tty stop bits!")
     # Look up the termios flow control and set it in the attributes structure
     termios_flowcontrol = {"none": 0, "rtscts": termios.CRTSCTS, "xonxoff": 0}
-    if termios_cflag_map_and_set(termios_flowcontrol, tty_options['flowcontrol'], "Error Invalid tty flow control!\n") < 0:
-        return -1
+    termios_cflag_map_and_set(termios_flowcontrol, tty_options['flowcontrol'], "Invalid tty flow control!")
 
     ######################################################################
     ### lflag
@@ -195,19 +187,14 @@ def serial_open(device_path, tty_options):
     # Set new termios attributes
     try:
         termios.tcsetattr(fd, termios.TCSANOW, tty_attr)
-    except termios.error, err:
-        sys.stderr.write("Error setting serial port options: %s\n" % str(err))
-        return -1
+    except termios.error as err:
+        raise Exception("Setting serial port options: %s" % str(err))
 
     # Return the fd
     return fd
 
 def serial_close(fd):
-    try:
-        os.close(fd)
-        return 0
-    except OSError:
-        return -1
+    os.close(fd)
 
 ###########################################################################
 ### TTY Helper Functions
@@ -220,9 +207,8 @@ def stdin_raw_open(echo):
     #   [iflag, oflag, cflag, lflag, ispeed, ospeed, cc]
     try:
         stdin_attr = termios.tcgetattr(fd)
-    except termios.error, err:
-        sys.stderr.write("Error getting stdin tty options: %s\n" % str(err))
-        return -1
+    except termios.error as err:
+        raise Exception("Getting stdin tty options: %s" % str(err))
 
     # Disable canonical input, so we can send characters without a line
     # feed, disable signal interpretation, and disable echo
@@ -240,9 +226,8 @@ def stdin_raw_open(echo):
     # Set the new stdin tty attributes
     try:
         termios.tcsetattr(fd, termios.TCSANOW, stdin_attr)
-    except termios.error, err:
-        sys.stderr.write("Error setting stdin tty options: %s\n" % str(err))
-        return -1
+    except termios.error as err:
+        raise Exception("Setting stdin tty options: %s" % str(err))
 
     return fd
 
@@ -261,9 +246,8 @@ def stdin_reset():
     #   [iflag, oflag, cflag, lflag, ispeed, ospeed, cc]
     try:
         stdin_attr = termios.tcgetattr(fd)
-    except termios.error, err:
-        sys.stderr.write("Error getting stdin tty options: %s\n" % str(err))
-        return -1
+    except termios.error as err:
+        raise Exception("Getting stdin tty options: %s" % str(err))
 
     # Enable canonical input, echo, signals -- stdin_attr[cflag]
     stdin_attr[3] |= (termios.ICANON | termios.ECHO | termios.ECHOE | termios.ISIG)
@@ -274,11 +258,8 @@ def stdin_reset():
     # Set the new stdin tty attributes
     try:
         termios.tcsetattr(fd, termios.TCSANOW, stdin_attr)
-    except termios.error, err:
-        sys.stderr.write("Error setting stdin tty options: %s\n" % str(err))
-        return -1
-
-    return 0
+    except termios.error as err:
+        raise Exception("Setting stdin tty options: %s" % str(err))
 
 ###########################################################################
 ### fd read and write
@@ -286,19 +267,18 @@ def stdin_reset():
 
 def fd_read(fd, n):
     try:
-        return (0, os.read(fd, n))
-    except OSError, err:
+        return os.read(fd, n)
+    except OSError as err:
         # Check if non-blocking read returned 0
         if err.errno == errno.EWOULDBLOCK:
-            return (0, None)
-        else:
-            return (-1, str(err))
+            return ""
+        raise Exception(str(err))
 
 def fd_write(fd, data):
     try:
-        return (os.write(fd, data), None)
-    except OSError, err:
-        return (-1, str(err))
+        return os.write(fd, data)
+    except OSError as err:
+        raise Exception(str(err))
 
 ###########################################################################
 ### Receive and transmit newline substitutions
@@ -482,10 +462,12 @@ def read_write_loop(serial_fd, stdin_fd, stdout_fd):
 
         if stdin_fd in ready_read_fds:
             # Read a buffer from stdin
-            retval, buff = fd_read(stdin_fd, READ_BUFF_SIZE)
-            if retval < 0:
-                sys.stderr.write("Error reading stdin: %s\n" % buff)
-                break
+            try:
+                buff = fd_read(stdin_fd, READ_BUFF_SIZE)
+            except Exception as err:
+                raise Exception("Error reading stdin: %s\n" % str(err))
+
+            # Process and write the buffer to the serial port
             if buff and len(buff) > 0:
                 # Perform transmit newline subsitutions
                 if txnl_sub != None:
@@ -496,25 +478,29 @@ def read_write_loop(serial_fd, stdin_fd, stdout_fd):
                     break
 
                 # Write the buffer to the serial port
-                retval, err = fd_write(serial_fd, buff)
-                if retval < 0:
-                    sys.stderr.write("Error writing to serial port: %s\n" % err)
-                    break
+                try:
+                    fd_write(serial_fd, buff)
+                except Exception as err:
+                    raise Exception("Error writing to serial port: %s\n" % str(err))
 
         if serial_fd in ready_read_fds:
             # Read a buffer from the serial port
-            retval, buff = fd_read(serial_fd, READ_BUFF_SIZE)
-            if retval < 0:
-                sys.stderr.write("Error reading serial port: %s\n" % buff)
-                break
+            try:
+                buff = fd_read(serial_fd, READ_BUFF_SIZE)
+            except Exception as err:
+                raise Exception("Error reading serial port: %s\n" % str(err))
 
             # Format and print the buffer to the console
             if buff and len(buff) > 0:
                 # Perform receive newline substitutions
                 if rxnl_match != None:
                     buff = format_rx_sub(buff, rxnl_match)
+
                 # Print to stdout
-                format_print(stdout_fd, buff)
+                try:
+                    format_print(stdout_fd, buff)
+                except Exception as err:
+                    raise Exception("Error writing to stdout: %s\n" % str(err))
 
 ###########################################################################
 ### Help and Command-Line Options Parsing
@@ -546,9 +532,9 @@ Written by Vanya A. Sergeev - <vsergeev@gmail.com>.\n\
   -c, --color <list>            Specify comma-delimited list of characters in\n\
                                   ASCII or hex. to color code: A,$,0x0d,0x0a,...\n\
 \n\
-  --tx-nl <substitution>        Specify transmit newline substitution\n\
+  --tx-nl <substitution>        Enable transmit newline substitution\n\
                                   [raw, none, cr, lf, crlf]\n\
-  --rx-nl <match>               Specify receive newline match\n\
+  --rx-nl <substitution>        Enable receive newline substitution\n\
                                   [raw, cr, lf, crlf, crorlf]\n\
 \n\
   -e, --echo                    Enable local character echo\n\
@@ -558,17 +544,13 @@ Written by Vanya A. Sergeev - <vsergeev@gmail.com>.\n\
     print "\
 Quit Escape Character:          Ctrl-]\n\
 \n\
-Color Code Sequence (fg/bg):\n\
- Black/Red, Black/Green, Black/Yellow, White/Blue, White/Magenta,\n\
- Black/Cyan, Black/White\n\
-\n\
 Default Options:\n\
  baudrate: 115200 | databits: 8 | parity: none | stopbits: 1 | flow ctrl: none\n\
  tx newline: raw | rx newline: raw | local echo: off\n\
  split mode: off | hex mode: off   | color code: off\n"
 
 def print_version():
-    print "ssterm version 1.7 - 12/16/2013"
+    print "ssterm version 1.8 - 09/13/2014"
 
 if __name__ == '__main__':
     # Parse options
@@ -674,27 +656,45 @@ if __name__ == '__main__':
         sys.exit(-1)
 
     # Open the serial port with our options
-    serial_fd = serial_open(args[0], TTY_Options)
-    if serial_fd < 0:
+    try:
+        serial_fd = serial_open(args[0], TTY_Options)
+    except Exception as err:
+        sys.stderr.write("Error opening serial port: %s\n" % str(err))
         sys.exit(-1)
 
     # Open stdin in raw mode
-    stdin_fd = stdin_raw_open(Format_Options['echo'])
-    if stdin_fd < 0:
+    try:
+        stdin_fd = stdin_raw_open(Format_Options['echo'])
+    except Exception as err:
+        sys.stderr.write("Error opening stdin in raw mode: %s\n" % str(err))
         sys.exit(-1)
 
     # Open stdout in raw mode
-    stdout_fd = stdout_raw_open()
-    if stdout_fd < 0:
+    try:
+        stdout_fd = stdout_raw_open()
+    except Exception as err:
+        sys.stderr.write("Error opening stdout in raw mode: %s\n" % str(err))
         sys.exit(-1)
 
-    read_write_loop(serial_fd, stdin_fd, stdout_fd)
+    try:
+        read_write_loop(serial_fd, stdin_fd, stdout_fd)
+    except Exception as err:
+        sys.stderr.write(str(err))
+        sys.exit(-1)
 
-    fd_write(stdout_fd, "\n")
+    print ""
 
     # Reset our console to buffered mode
-    stdin_reset()
+    try:
+        stdin_reset()
+    except Exception as err:
+        sys.stderr.write("Error resetting stdin to buffered mode: %s\n" % str(err))
+        sys.exit(-1)
 
     # Close the serial port
-    serial_close(serial_fd)
+    try:
+        serial_close(serial_fd)
+    except Exception as err:
+        sys.stderr.write("Error closing serial port: %s\n" % str(err))
+        sys.exit(-1)
 
