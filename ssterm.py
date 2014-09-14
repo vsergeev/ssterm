@@ -46,6 +46,7 @@ TTY_Options = {
 # Default Formatting Options
 Format_Options = {
                 'print_mode': 'normal',   # 'split', 'split_full_lines', 'hexadecimal', 'hexadecimal_newline'
+                'input_mode': 'normal',    # 'hex'
                 'transmit_newline': "raw",
                 'receive_newline': "raw",
                 'echo': False
@@ -80,7 +81,7 @@ READ_BUFF_SIZE = 4096
 Console_Newline = os.linesep
 
 # Newline Substitution tables
-RX_Newline_Match = {'raw': None, 'cr': "\r", 'crlf': "\r\n", 'lf': "\n", 'crorlf': "\r|\n"}
+RX_Newline_Sub = {'raw': None, 'cr': "\r", 'crlf': "\r\n", 'lf': "\n", 'crorlf': "\r|\n"}
 TX_Newline_Sub = {'raw': None, 'cr': "\r", 'crlf': "\r\n", 'lf': "\n", 'none': ""}
 
 ###########################################################################
@@ -284,7 +285,7 @@ def fd_write(fd, data):
 ### Receive and transmit newline substitutions
 ###########################################################################
 
-def format_tx_sub(data, sub):
+def format_tx_nlsub(data, sub):
     # Substitute console newlines in data with 'sub'
 
     # FIXME: This assumes a single character platform newline.
@@ -292,23 +293,43 @@ def format_tx_sub(data, sub):
 
     return data
 
-# State used by format_rx_sub
-rxnl_match_save = ''
-def format_rx_sub(data, match):
-    global rxnl_match_save
+# State used by format_tx_hex
+txhex_state = ""
+def format_tx_hex(data):
+    global txhex_state
+
+    hex_data = ""
+    for x in data:
+        if x in string.hexdigits:
+            txhex_state += x
+        # Reset our state if we encounter a none hex character
+        else:
+            txhex_state = ""
+
+        # Convert 2 consecutive hex characters
+        if len(txhex_state) == 2:
+            hex_data += chr(int(txhex_state, 16))
+            txhex_state = ""
+
+    return hex_data
+
+# State used by format_rx_nlsub
+rxnl_state = ""
+def format_rx_nlsub(data, match):
+    global rxnl_state
 
     # Substitute 'match' in data with console newline
 
     # Append left-over newline character match from before
-    data = rxnl_match_save + data
-    rxnl_match_save = ''
+    data = rxnl_state + data
+    rxnl_state = ""
 
     # Substitute newline matches with console newline
     data = re.sub(match, Console_Newline, data)
 
     # If the last character is a part of a match, save it for later
     if data[-1] == match[0][0]:
-        rxnl_match_save = data[-1]
+        rxnl_state = data[-1]
         data = data[0:-1]
 
     return data
@@ -318,8 +339,9 @@ def format_rx_sub(data, match):
 ###########################################################################
 
 def format_print_normal(stdout_fd, data):
-    # Apply Color coding if necessary
-    if len(Color_Chars) > 0:
+    if len(Color_Chars) == 0:
+        fd_write(stdout_fd, data)
+    else:
         # Unfortunately, for generality, we can't do a global
         # regex substitution on data with the color-coded
         # version, since we could have potentially selected
@@ -332,8 +354,6 @@ def format_print_normal(stdout_fd, data):
                 fd_write(stdout_fd, Color_Codes[Color_Chars[ord(x)]] + x + Color_Code_Reset)
             else:
                 fd_write(stdout_fd, x)
-    else:
-        fd_write(stdout_fd, data)
 
 # State used by format_print_hexadecimal
 stdout_cursor_x = 0
@@ -436,16 +456,17 @@ def format_print_split(stdout_fd, data, partial_print=True):
             split_print(stdout_split_bytes)
 
 def format_print_split_full_lines(stdout_fd, data):
-    return format_print_split(stdout_fd, data, partial_print=False)
+    format_print_split(stdout_fd, data, partial_print=False)
 
 ###########################################################################
 ### Main Read/Write Loop
 ###########################################################################
 
 def read_write_loop(serial_fd, stdin_fd, stdout_fd):
-    # Look up our TX newline sub, RX newline match, and format print function
+    # Look up our formatting options
     txnl_sub = TX_Newline_Sub[Format_Options['transmit_newline']]
-    rxnl_match = RX_Newline_Match[Format_Options['receive_newline']]
+    rxnl_sub = RX_Newline_Sub[Format_Options['receive_newline']]
+    input_mode = Format_Options['input_mode']
     format_print = {
             'normal': format_print_normal,
             'split': format_print_split,
@@ -469,13 +490,17 @@ def read_write_loop(serial_fd, stdin_fd, stdout_fd):
 
             # Process and write the buffer to the serial port
             if buff and len(buff) > 0:
-                # Perform transmit newline subsitutions
-                if txnl_sub != None:
-                    buff = format_tx_sub(buff, txnl_sub)
-
                 # If we detect the escape character, then quit
                 if chr(Quit_Escape_Character) in buff:
                     break
+
+                # Perform transmit newline subsitutions
+                if txnl_sub != None:
+                    buff = format_tx_nlsub(buff, txnl_sub)
+
+                # Perform hexadecimal interpretation
+                if input_mode == 'hex':
+                    buff = format_tx_hex(buff)
 
                 # Write the buffer to the serial port
                 try:
@@ -493,8 +518,8 @@ def read_write_loop(serial_fd, stdin_fd, stdout_fd):
             # Format and print the buffer to the console
             if buff and len(buff) > 0:
                 # Perform receive newline substitutions
-                if rxnl_match != None:
-                    buff = format_rx_sub(buff, rxnl_match)
+                if rxnl_sub != None:
+                    buff = format_rx_nlsub(buff, rxnl_sub)
 
                 # Print to stdout
                 try:
