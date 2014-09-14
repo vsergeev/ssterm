@@ -2,7 +2,7 @@
 
 # ssterm - simple serial-port terminal
 # Version 1.8 - September 2014
-# Written by Vanya A. Sergeev - <vsergeev@gmail.com>
+# Vanya A. Sergeev - <vsergeev@gmail.com>
 # https://github.com/vsergeev/ssterm
 #
 # Copyright (C) 2007-2014 Vanya A. Sergeev
@@ -40,13 +40,13 @@ TTY_Options = {
                 'databits': 8,
                 'stopbits': 1,
                 'parity': "none",
-                'flowcontrol': "none"
+                'flow-control': "none"
             }
 
 # Default Formatting Options
 Format_Options = {
-                'print_mode': 'normal',   # 'split', 'split_full_lines', 'hexadecimal', 'hexadecimal_newline'
-                'input_mode': 'normal',    # 'hex'
+                'output_mode': 'raw',   # 'split', 'splitfull', 'hex', 'hexnl'
+                'input_mode': 'raw',    # 'hex'
                 'transmit_newline': "raw",
                 'receive_newline': "raw",
                 'echo': False
@@ -154,7 +154,7 @@ def serial_open(device_path, tty_options):
     termios_cflag_map_and_set(termios_stopbits, tty_options['stopbits'], "Invalid tty stop bits!")
     # Look up the termios flow control and set it in the attributes structure
     termios_flowcontrol = {"none": 0, "rtscts": termios.CRTSCTS, "xonxoff": 0}
-    termios_cflag_map_and_set(termios_flowcontrol, tty_options['flowcontrol'], "Invalid tty flow control!")
+    termios_cflag_map_and_set(termios_flowcontrol, tty_options['flow-control'], "Invalid tty flow control!")
 
     ######################################################################
     ### lflag
@@ -182,7 +182,7 @@ def serial_open(device_path, tty_options):
     if tty_options['parity'] != "none":
         tty_attr[0] |= (termios.INPCK | termios.ISTRIP)
     # Enable XON/XOFF if we are using software flow control
-    if tty_options['flowcontrol'] == "xonxoff":
+    if tty_options['flow-control'] == "xonxoff":
         tty_attr[0] |= (termios.IXON | termios.IXOFF | termios.IXANY)
 
     # Set new termios attributes
@@ -338,7 +338,7 @@ def format_rx_nlsub(data, match):
 ### Formatted Print
 ###########################################################################
 
-def format_print_normal(stdout_fd, data):
+def format_print_raw(stdout_fd, data):
     if len(Color_Chars) == 0:
         fd_write(stdout_fd, data)
     else:
@@ -468,12 +468,12 @@ def read_write_loop(serial_fd, stdin_fd, stdout_fd):
     rxnl_sub = RX_Newline_Sub[Format_Options['receive_newline']]
     input_mode = Format_Options['input_mode']
     format_print = {
-            'normal': format_print_normal,
+            'raw': format_print_raw,
             'split': format_print_split,
-            'split_full_lines': format_print_split_full_lines,
-            'hexadecimal': format_print_hexadecimal,
-            'hexadecimal_newline': format_print_hexadecimal_newline,
-        }[Format_Options['print_mode']]
+            'splitfull': format_print_split_full_lines,
+            'hex': format_print_hexadecimal,
+            'hexnl': format_print_hexadecimal_newline,
+        }[Format_Options['output_mode']]
 
     # Select between serial port and stdin file descriptors
     read_fds = [serial_fd, stdin_fd]
@@ -534,45 +534,51 @@ def read_write_loop(serial_fd, stdin_fd, stdout_fd):
 def print_usage():
     print "Usage: %s [options] <serial port device>\n" % sys.argv[0]
     print "\
-ssterm - simple serial-port terminal\n\
-Written by Vanya A. Sergeev - <vsergeev@gmail.com>.\n\
+ssterm - simple serial-port terminal v1.8\n\
+Vanya A. Sergeev - <vsergeev@gmail.com>\n\
+https://github.com/vsergeev/ssterm\n\
 \n\
- Serial Port Options:\n\
-  -b, --baudrate <rate>         Specify baudrate (e.g., 9600, 115200, etc.)\n\
+Serial Port Options:\n\
+  -b, --baudrate <rate>         Specify baudrate (e.g. 9600, 115200, etc.)\n\
   -d, --databits <number>       Specify number of data bits [5,6,7,8]\n\
   -p, --parity <type>           Specify parity [none, odd, even]\n\
   -t, --stopbits <number>       Specify number of stop bits [1,2]\n\
   -f, --flow-control <type>     Specify flow-control [none, rtscts, xonxoff]\n\
 \n\
- Formatting Options:\n\
-  -s, --split                   Split Hexadecimal/ASCII mode\n\
+Output Formatting Options:\n\
+  -o, --output <mode>           Specify output mode\n\
+                                  raw       raw (default)\n\
+                                  split     hex./ASCII split\n\
+                                  splitfull hex./ASCII split with full lines\n\
+                                  hex       hex.\n\
+                                  hexnl     hex. with newlines\n\
 \n\
-  --split-full                  Split Hexadecimal/ASCII mode with full lines\n\
-                                  (better for piping than --split)\n\
-\n\
-  -x, --hex                     Hexadecimal mode\n\
-\n\
-  --hex-nl                      Hexadecimal mode with newline interpretation\n\
+  --rx-nl <substitution>        Enable receive newline substitution\n\
+                                  [raw, cr, lf, crlf, crorlf]\n\
 \n\
   -c, --color <list>            Specify comma-delimited list of characters in\n\
                                   ASCII or hex. to color code: A,$,0x0d,0x0a,...\n\
 \n\
+Input Formatting Options:\n\
+  -i, --input <mode>            Specify input mode\n\
+                                  raw       raw (default)\n\
+                                  hex       hex. interpretaion\n\
+\n\
   --tx-nl <substitution>        Enable transmit newline substitution\n\
                                   [raw, none, cr, lf, crlf]\n\
-  --rx-nl <substitution>        Enable receive newline substitution\n\
-                                  [raw, cr, lf, crlf, crorlf]\n\
 \n\
   -e, --echo                    Enable local character echo\n\
 \n\
+Miscellaneous:\n\
   -h, --help                    Display this usage/help\n\
   -v, --version                 Display the program's version\n\n"
     print "\
 Quit Escape Character:          Ctrl-]\n\
 \n\
 Default Options:\n\
- baudrate: 115200 | databits: 8 | parity: none | stopbits: 1 | flow ctrl: none\n\
- tx newline: raw | rx newline: raw | local echo: off\n\
- split mode: off | hex mode: off   | color code: off\n"
+ baudrate: 115200 | databits: 8 | parity: none | stopbits: 1 | flowctrl: none\n\
+ output mode: raw | rx newline: raw | color code: off\n\
+ input mode: raw  | tx newline: raw | local echo: off\n"
 
 def print_version():
     print "ssterm version 1.8 - 09/13/2014"
@@ -580,7 +586,7 @@ def print_version():
 if __name__ == '__main__':
     # Parse options
     try:
-        options, args = getopt.gnu_getopt(sys.argv[1:], "b:d:p:t:f:esxhvc:", ["baudrate=", "databits=", "parity=", "stopbits=", "flowcontrol=", "tx-nl=", "rx-nl=", "echo", "split", "split-full", "hex", "hex-nl", "color-nl", "help", "version", "color="])
+        options, args = getopt.gnu_getopt(sys.argv[1:], "b:d:p:t:f:o:c:i:ehv", ["baudrate=", "databits=", "parity=", "stopbits=", "flow-control=", "output=", "color=", "rx-nl=", "input=", "tx-nl=", "echo", "help", "version"])
     except getopt.GetoptError, err:
         print str(err), "\n"
         print_usage()
@@ -588,48 +594,43 @@ if __name__ == '__main__':
 
     # Update options containers
     for opt_c, opt_arg in options:
+        # Serial port options
         if opt_c in ("-b", "--baudrate"):
             try:
                 TTY_Options['baudrate'] = int(opt_arg, 10)
             except ValueError:
                 sys.stderr.write("Error: Invalid tty baudrate!\n")
                 sys.exit(-1)
-
         elif opt_c in ("-d", "--databits"):
             try:
                 TTY_Options['databits'] = int(opt_arg, 10)
             except ValueError:
                 sys.stderr.write("Error: Invalid tty data bits!\n")
                 sys.exit(-1)
-
         elif opt_c in ("-p", "--parity"):
             TTY_Options['parity'] = opt_arg
-
         elif opt_c in ("-t", "--stopbits"):
             try:
                 TTY_Options['stopbits'] = int(opt_arg, 10)
             except ValueError:
                 sys.stderr.write("Error: Invalid tty stop bits!\n")
                 sys.exit(-1)
+        elif opt_c in ("-f", "--flow-control"):
+            TTY_Options['flow-control'] = opt_arg
 
-        elif opt_c in ("-f", "--flowcontrol"):
-            TTY_Options['flowcontrol'] = opt_arg
-
-        elif opt_c in ("-e", "--echo"):
-            Format_Options['echo'] = True
-
-        elif opt_c in ("-s", "--split"):
-            Format_Options['print_mode'] = 'split'
-
-        elif opt_c in ("--split-full"):
-            Format_Options['print_mode'] = 'split_full_lines'
-
-        elif opt_c in ("-x", "--hex"):
-            Format_Options['print_mode'] = 'hexadecimal'
-
-        elif opt_c == "--hex-nl":
-            Format_Options['print_mode'] = 'hexadecimal_newline'
-
+        # Output Formatting Options
+        elif opt_c in ("-o", "--output"):
+            if not opt_arg in ["raw", "split", "splitfull", "hex", "hexnl"]:
+                sys.stderr.write("Error: Invalid output mode!\n")
+                print_usage()
+                sys.exit(-1)
+            Format_Options['output_mode'] = opt_arg
+        elif opt_c == "--tx-nl":
+            if not opt_arg in TX_Newline_Sub:
+                sys.stderr.write("Error: Invalid tx newline type!\n")
+                print_usage()
+                sys.exit(-1)
+            Format_Options['transmit_newline'] = opt_arg
         elif opt_c in ("-c", "--color"):
             opt_arg = filter(lambda x: len(x) >= 1, opt_arg.split(","))
             if len(opt_arg) > len(Color_Codes):
@@ -653,24 +654,26 @@ if __name__ == '__main__':
                     sys.stderr.write("Error: Unknown color code character: %s\n" % c)
                     sys.exit(-1)
 
-        elif opt_c == "--tx-nl":
-            if not opt_arg in TX_Newline_Sub:
-                sys.stderr.write("Error: Invalid tx newline type!\n")
+        # Input Formatting Options
+        elif opt_c in ("-i", "--input"):
+            if not opt_arg in ["raw", "hex"]:
+                sys.stderr.write("Error: Invalid input mode!\n")
                 print_usage()
                 sys.exit(-1)
-            Format_Options['transmit_newline'] = opt_arg
-
+            Format_Options['input_mode'] = opt_arg
         elif opt_c == "--rx-nl":
-            if not opt_arg in RX_Newline_Match:
+            if not opt_arg in RX_Newline_Sub:
                 sys.stderr.write("Error: Invalid rx newline type!\n")
                 print_usage()
                 sys.exit(-1)
             Format_Options['receive_newline'] = opt_arg
+        elif opt_c in ("-e", "--echo"):
+            Format_Options['echo'] = True
 
+        # Miscellaneous Options
         elif opt_c in ("-h", "--help"):
             print_usage()
             sys.exit(0)
-
         elif opt_c in ("-v", "--version"):
             print_version()
             sys.exit(0)
@@ -704,7 +707,7 @@ if __name__ == '__main__':
     try:
         read_write_loop(serial_fd, stdin_fd, stdout_fd)
     except Exception as err:
-        sys.stderr.write(str(err))
+        sys.stderr.write("%s\n" % str(err))
         sys.exit(-1)
 
     print ""
