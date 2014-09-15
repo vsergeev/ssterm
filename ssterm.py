@@ -40,7 +40,7 @@ TTY_Options = {
                 'databits': 8,
                 'stopbits': 1,
                 'parity': "none",
-                'flow-control': "none"
+                'flow_control': "none"
             }
 
 # Default Formatting Options
@@ -88,7 +88,7 @@ TX_Newline_Sub = {'raw': None, 'cr': "\r", 'crlf': "\r\n", 'lf': "\n", 'none': "
 ### Serial Helper Functions
 ###########################################################################
 
-def serial_open(device_path, tty_options):
+def serial_open(device_path, baudrate, databits, stopbits, parity, flow_control):
     # Open the tty device
     try:
         fd = os.open(device_path, os.O_RDWR | os.O_NOCTTY)
@@ -125,16 +125,16 @@ def serial_open(device_path, tty_options):
         3000000: 0x100D, 3500000: 0x100E, 4000000: 0x100F,
     }
 
-    if tty_options['baudrate'] in termios_baudrates:
-        tty_attr[2] |= termios_baudrates[tty_options['baudrate']]
-        tty_attr[4] = termios_baudrates[tty_options['baudrate']]
-        tty_attr[5] = termios_baudrates[tty_options['baudrate']]
+    if baudrate in termios_baudrates:
+        tty_attr[2] |= termios_baudrates[baudrate]
+        tty_attr[4] = termios_baudrates[baudrate]
+        tty_attr[5] = termios_baudrates[baudrate]
     else:
         # Set alternate speed via BOTHER (=0x1000) cflag,
         # Pass baudrate directly in ispeed, ospeed
         tty_attr[2] |= 0x1000
-        tty_attr[4] = tty_options['baudrate']
-        tty_attr[5] = tty_options['baudrate']
+        tty_attr[4] = baudrate
+        tty_attr[5] = baudrate
 
     # Look up and set the appropriate cflag bits in termios_options for a given
     # option
@@ -145,16 +145,16 @@ def serial_open(device_path, tty_options):
 
     # Look up the termios data bits and set it in the attributes structure
     termios_databits = {5: termios.CS5, 6: termios.CS6, 7: termios.CS7, 8: termios.CS8}
-    termios_cflag_map_and_set(termios_databits, tty_options['databits'], "Invalid tty databits!")
+    termios_cflag_map_and_set(termios_databits, databits, "Invalid tty databits!")
     # Look up the termios parity and set it in the attributes structure
     termios_parity = {"none": 0, "even": termios.PARENB, "odd": termios.PARENB | termios.PARODD}
-    termios_cflag_map_and_set(termios_parity, tty_options['parity'], "Invalid tty parity!")
+    termios_cflag_map_and_set(termios_parity, parity, "Invalid tty parity!")
     # Look up the termios stop bits and set it in the attributes structure
     termios_stopbits = {1: 0, 2: termios.CSTOPB}
-    termios_cflag_map_and_set(termios_stopbits, tty_options['stopbits'], "Invalid tty stop bits!")
+    termios_cflag_map_and_set(termios_stopbits, stopbits, "Invalid tty stop bits!")
     # Look up the termios flow control and set it in the attributes structure
     termios_flowcontrol = {"none": 0, "rtscts": termios.CRTSCTS, "xonxoff": 0}
-    termios_cflag_map_and_set(termios_flowcontrol, tty_options['flow-control'], "Invalid tty flow control!")
+    termios_cflag_map_and_set(termios_flowcontrol, flow_control, "Invalid tty flow control!")
 
     ######################################################################
     ### lflag
@@ -179,10 +179,10 @@ def serial_open(device_path, tty_options):
     # Ignore break characters -- tty_attr[iflag]
     tty_attr[0] = termios.IGNBRK
     # Enable parity checking if we are using parity -- tty_attr[iflag]
-    if tty_options['parity'] != "none":
+    if parity != "none":
         tty_attr[0] |= (termios.INPCK | termios.ISTRIP)
     # Enable XON/XOFF if we are using software flow control
-    if tty_options['flow-control'] == "xonxoff":
+    if flow_control == "xonxoff":
         tty_attr[0] |= (termios.IXON | termios.IXOFF | termios.IXANY)
 
     # Set new termios attributes
@@ -607,7 +607,7 @@ if __name__ == '__main__':
                 sys.stderr.write("Error: Invalid tty stop bits!\n")
                 sys.exit(-1)
         elif opt_c in ("-f", "--flow-control"):
-            TTY_Options['flow-control'] = opt_arg
+            TTY_Options['flow_control'] = opt_arg
 
         # Output Formatting Options
         elif opt_c in ("-o", "--output"):
@@ -676,7 +676,7 @@ if __name__ == '__main__':
 
     # Open the serial port with our options
     try:
-        serial_fd = serial_open(args[0], TTY_Options)
+        serial_fd = serial_open(args[0], TTY_Options['baudrate'], TTY_Options['databits'], TTY_Options['stopbits'], TTY_Options['parity'], TTY_Options['flow_control'])
     except Exception as err:
         sys.stderr.write("Error opening serial port: %s\n" % str(err))
         sys.exit(-1)
