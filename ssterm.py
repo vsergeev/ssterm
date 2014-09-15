@@ -50,7 +50,7 @@ Format_Options = {
                 'transmit_newline': "raw",  # 'cr', 'crlf', 'lf', 'none'
                 'receive_newline': "raw",   # 'cr', 'crlf', 'lf', 'crorlf'
                 'echo': False,
-                'color_chars': {},          # { ord('\n'), ord('A') }
+                'color_chars': [],          # [ ord('\n'), ord('A') ]
             }
 
 ###############################################################################
@@ -313,7 +313,7 @@ def output_processor_newline(sub):
         return buf
     return f
 
-def output_processor_raw(color_chars):
+def output_processor_raw(color_chars=[]):
     # If we're not color coding
     if len(color_chars) == 0:
         # Identity function
@@ -331,13 +331,13 @@ def output_processor_raw(color_chars):
         nbuf = ""
         for c in buf:
             if ord(c) in color_chars:
-                nbuf += Color_Codes[color_chars[ord(c)]] + c + Color_Code_Reset
+                nbuf += Color_Codes[color_chars.index(ord(c))] + c + Color_Code_Reset
             else:
                 nbuf += c
         return nbuf
     return f
 
-def output_processor_hexadecimal(color_chars, interpret_newlines=False):
+def output_processor_hexadecimal(color_chars=[], interpret_newlines=False):
     # State to keep track of our x position
     state = [0]
     # Format buffer into 2-column hexadecimal representation, with optional
@@ -347,7 +347,7 @@ def output_processor_hexadecimal(color_chars, interpret_newlines=False):
         for c in buf:
             # Color code this character if it's in our color chars dictionary
             if len(color_chars) > 0 and ord(c) in color_chars:
-                nbuf += Color_Codes[color_chars[ord(c)]] + ("%02x" % ord(c)) + Color_Code_Reset
+                nbuf += Color_Codes[color_chars.index(ord(c))] + ("%02x" % ord(c)) + Color_Code_Reset
             else:
                 nbuf += "%02x" % ord(c)
 
@@ -370,7 +370,7 @@ def output_processor_hexadecimal(color_chars, interpret_newlines=False):
         return nbuf
     return f
 
-def output_processor_split(color_chars, partial_lines=True):
+def output_processor_split(color_chars=[], partial_lines=True):
     # Helper function to format one line of split hexadecimal/ASCII
     # representation with optional color coding.
     def format_split_line(buf):
@@ -379,7 +379,7 @@ def output_processor_split(color_chars, partial_lines=True):
         for i in range(len(buf)):
             # Color code this character if it's in our color chars
             if len(color_chars) > 0 and ord(buf[i]) in color_chars:
-                nbuf += Color_Codes[color_chars[ord(buf[i])]] + ("%02x" % ord(buf[i])) + Color_Code_Reset
+                nbuf += Color_Codes[color_chars.index(ord(buf[i]))] + ("%02x" % ord(buf[i])) + Color_Code_Reset
             else:
                 nbuf += "%02x" % ord(buf[i])
 
@@ -408,7 +408,7 @@ def output_processor_split(color_chars, partial_lines=True):
 
             # Color code this character if it's in our color chars
             if len(color_chars) > 0 and ord(buf[i]) in color_chars:
-                nbuf += Color_Codes[color_chars[ord(buf[i])]] + c + Color_Code_Reset
+                nbuf += Color_Codes[color_chars.index(ord(buf[i]))] + c + Color_Code_Reset
             else:
                 nbuf += c
 
@@ -642,24 +642,25 @@ if __name__ == '__main__':
         elif opt_c in ("-c", "--color"):
             opt_arg = filter(lambda x: len(x) >= 1, opt_arg.split(","))
             if len(opt_arg) > len(Color_Codes):
-                sys.stderr.write("Error: Maximum color code characters (%d) exceeded!\n" % len(Color_Codes))
+                sys.stderr.write("Error: Maximum number of color code characters (%d) exceeded!\n" % len(Color_Codes))
                 sys.exit(-1)
-            # Parse ASCII and hex encoded characters into our color_chars dictionary
+
+            # Parse ASCII and hex encoded characters into our color_chars list
             for c in opt_arg:
                 # ASCII character
                 if len(c) == 1:
-                    Format_Options['color_chars'][ord(c)] = len(Format_Options['color_chars'])
+                    Format_Options['color_chars'].append(ord(c))
                 # Hexadecimal number
                 elif len(c) > 2 and c[0:2] == "0x":
                     try:
                         c_int = int(c, 16)
                     except ValueError:
-                        sys.stderr.write("Error: Unknown color code character: %s\n" % c)
+                        sys.stderr.write("Error: Unknown color code character: \"%s\"\n" % c)
                         sys.exit(-1)
-                    Format_Options['color_chars'][c_int] = len(Format_Options['color_chars'])
+                    Format_Options['color_chars'].append(c_int)
                 # Unknown
                 else:
-                    sys.stderr.write("Error: Unknown color code character: %s\n" % c)
+                    sys.stderr.write("Error: Unknown color code character: \"%s\"\n" % c)
                     sys.exit(-1)
 
         # Input Formatting Options
