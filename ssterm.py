@@ -30,9 +30,9 @@ import getopt
 import re
 import string
 
-###########################################################################
+###############################################################################
 ### Default Options
-###########################################################################
+###############################################################################
 
 # Default TTY Options
 TTY_Options = {
@@ -45,21 +45,23 @@ TTY_Options = {
 
 # Default Formatting Options
 Format_Options = {
-                'output_mode': 'raw',   # 'split', 'splitfull', 'hex', 'hexnl'
-                'input_mode': 'raw',    # 'hex'
-                'transmit_newline': "raw",
-                'receive_newline': "raw",
-                'echo': False
+                'output_mode': 'raw',       # 'split', 'splitfull', 'hex', 'hexnl'
+                'input_mode': 'raw',        # 'hex'
+                'transmit_newline': "raw",  # 'cr', 'crlf', 'lf', 'none'
+                'receive_newline': "raw",   # 'cr', 'crlf', 'lf', 'crorlf'
+                'echo': False,
+                'color_chars': {},          # { ord('\n'), ord('A') }
             }
 
-# Default color coded characters, e.g. { ord('\n'), ord('A') }
-Color_Chars = {}
+###############################################################################
+### Program Constants
+###############################################################################
+
+# Quit Escape Character: Ctrl-] = 0x1D
+Quit_Escape_Character = 0x1D
 
 # Number of columns in hexadecimal print mode
 Hexadecimal_Columns = 16
-
-# Quit Escape Character, Ctrl-] = 0x1D
-Quit_Escape_Character = 0x1D
 
 # Default color codes:
 #   Black/Red, Black/Green, Black/Yellow,
@@ -71,22 +73,15 @@ Color_Codes = [ "\x1b[1;30;41m", "\x1b[1;30;42m", "\x1b[1;30;43m",
 Color_Code_Reset = "\x1b[0m"
 
 # Read buffer size
-READ_BUFF_SIZE = 4096
-
-###########################################################################
-### Program Constants
-###########################################################################
-
-# Console Newline
-Console_Newline = os.linesep
+READ_BUF_SIZE = 4096
 
 # Newline Substitution tables
 RX_Newline_Sub = {'raw': None, 'cr': "\r", 'crlf': "\r\n", 'lf': "\n", 'crorlf': "\r|\n"}
 TX_Newline_Sub = {'raw': None, 'cr': "\r", 'crlf': "\r\n", 'lf': "\n", 'none': ""}
 
-###########################################################################
+###############################################################################
 ### Serial Helper Functions
-###########################################################################
+###############################################################################
 
 def serial_open(device_path, baudrate, databits, stopbits, parity, flow_control):
     # Open the tty device
@@ -197,9 +192,9 @@ def serial_open(device_path, baudrate, databits, stopbits, parity, flow_control)
 def serial_close(fd):
     os.close(fd)
 
-###########################################################################
+###############################################################################
 ### TTY Helper Functions
-###########################################################################
+###############################################################################
 
 def stdin_raw_open(echo):
     fd = sys.stdin.fileno()
@@ -262,9 +257,9 @@ def stdin_reset():
     except termios.error as err:
         raise Exception("Setting stdin tty options: %s" % str(err))
 
-###########################################################################
+###############################################################################
 ### fd read and write
-###########################################################################
+###############################################################################
 
 def fd_read(fd, n):
     return os.read(fd, n)
@@ -272,199 +267,235 @@ def fd_read(fd, n):
 def fd_write(fd, data):
     return os.write(fd, data)
 
-###########################################################################
-### Receive and transmit newline substitutions
-###########################################################################
+###############################################################################
+### Input Processors
+###############################################################################
 
-def format_tx_nlsub(data, sub):
-    # Substitute console newlines in data with 'sub'
-
-    # FIXME: This assumes a single character platform newline.
-    data = ''.join([sub if x == Console_Newline else x for x in data])
-
-    return data
-
-# State used by format_tx_hex
-txhex_state = ""
-def format_tx_hex(data):
-    global txhex_state
-
-    hex_data = ""
-    for x in data:
-        if x in string.hexdigits:
-            txhex_state += x
-        # Reset our state if we encounter a none hex character
-        else:
-            txhex_state = ""
-
-        # Convert 2 consecutive hex characters
-        if len(txhex_state) == 2:
-            hex_data += chr(int(txhex_state, 16))
-            txhex_state = ""
-
-    return hex_data
-
-# State used by format_rx_nlsub
-rxnl_state = ""
-def format_rx_nlsub(data, match):
-    global rxnl_state
-
-    # Substitute 'match' in data with console newline
-
-    # Append left-over newline character match from before
-    data = rxnl_state + data
-    rxnl_state = ""
-
-    # Substitute newline matches with console newline
-    data = re.sub(match, Console_Newline, data)
-
-    # If the last character is a part of a match, save it for later
-    if data[-1] == match[0][0]:
-        rxnl_state = data[-1]
-        data = data[0:-1]
-
-    return data
-
-###########################################################################
-### Formatted Print
-###########################################################################
-
-def format_print_raw(stdout_fd, data):
-    if len(Color_Chars) == 0:
-        fd_write(stdout_fd, data)
-    else:
-        # Unfortunately, for generality, we can't do a global
-        # regex substitution on data with the color-coded
-        # version, since we could have potentially selected
-        # color code characters that are present in the ANSI
-        # color escape sequences. So we operate on the data
-        # a char at time here.
-        for x in data:
-            # Color code this character if it's in our color chars dictionary
-            if ord(x) in Color_Chars:
-                fd_write(stdout_fd, Color_Codes[Color_Chars[ord(x)]] + x + Color_Code_Reset)
-            else:
-                fd_write(stdout_fd, x)
-
-# State used by format_print_hexadecimal
-stdout_cursor_x = 0
-def format_print_hexadecimal(stdout_fd, data, interpret_newlines=False):
-    global stdout_cursor_x
-
-    for x in data:
-        # Color code this character if it's in our color chars dictionary
-        if len(Color_Chars) > 0 and ord(x) in Color_Chars:
-            fd_write(stdout_fd, Color_Codes[Color_Chars[ord(x)]] + ("%02x" % ord(x)) + Color_Code_Reset)
-        else:
-            fd_write(stdout_fd, "%02x" % ord(x))
-        stdout_cursor_x += 1
-
-        # Pretty print into two columns
-        if stdout_cursor_x == Hexadecimal_Columns/2:
-            fd_write(stdout_fd, "  ")
-        elif stdout_cursor_x == Hexadecimal_Columns:
-            fd_write(stdout_fd, "\n")
-            stdout_cursor_x = 0
-        else:
-            fd_write(stdout_fd, " ")
-
-        # Insert a newline if we encounter one and we're interpreting them
+def input_processor_newline(sub):
+    # Substitute console newline in buf with sub
+    def f(buf):
         # FIXME: This assumes a single character platform newline.
-        if x == Console_Newline and interpret_newlines:
-            fd_write(stdout_fd, Console_Newline)
-            stdout_cursor_x = 0
+        return buf.replace(os.linesep, sub)
+    return f
 
-def format_print_hexadecimal_newline(stdout_fd, data):
-    format_print_hexadecimal(stdout_fd, data, interpret_newlines=True)
-
-# State used by format_print_split
-stdout_split_bytes = []
-def format_print_split(stdout_fd, data, partial_print=True):
-    global stdout_split_bytes
-
-    # Erase partially completed strings with \r
-    if partial_print:
-        if len(stdout_split_bytes) > 0:
-            fd_write(stdout_fd, "\r")
-
-    def split_print(byte_list):
-        # split_print() expects:
-        # 1 <= len(byte_list) <= Hexadecimal_Columns
-
-        # Print the hexadecimal representation
-        for i in range(len(byte_list)):
-            # Color code this character if it's in our color chars dictionary
-            if len(Color_Chars) > 0 and ord(byte_list[i]) in Color_Chars:
-                fd_write(stdout_fd, Color_Codes[Color_Chars[ord(byte_list[i])]] + ("%02x" % ord(byte_list[i])) + Color_Code_Reset)
+def input_processor_hexadecimal():
+    # State to keep track of consecutive hex characters
+    state = [""]
+    # Interpret hexadecimal characters in buf
+    def f(buf):
+        nbuf = ""
+        for c in buf:
+            if c in string.hexdigits:
+                state[0] += c
+            # Reset our state if we encounter a none hex character
             else:
-                fd_write(stdout_fd, "%02x" % ord(byte_list[i]))
+                state[0] = ""
+
+            # Convert 2 consecutive hex characters
+            if len(state[0]) == 2:
+                nbuf += chr(int(state[0], 16))
+                state[0] = ""
+        return nbuf
+    return f
+
+###############################################################################
+### Output Processors
+###############################################################################
+
+def output_processor_newline(sub):
+    # State to keep track of cut-off newline sequences
+    state = [""]
+    # Substitute sub in buf with console newline
+    def f(buf):
+        # Append our left-over newline character match from before
+        buf = state[0] + buf
+        state[0] = ""
+
+        # Substitute newline matches with console newline
+        buf = re.sub(sub, os.linesep, buf)
+
+        # If the last character is a part of a match, chop it off and save it
+        # for later
+        if len(buf) > 0 and buf[-1] == sub[0]:
+            state[0] = buf[-1]
+            buf = buf[:-1]
+
+        return buf
+    return f
+
+def output_processor_raw(color_chars):
+    # If we're not color coding
+    if len(color_chars) == 0:
+        # Identity function
+        def f(buf):
+            return buf
+        return f
+
+    # Color code characters in buf
+    def f(buf):
+        # Unfortunately, we can't do a global regex substitution on data with
+        # its color-coded version, since we could have potentially selected
+        # color code characters that are present in the ANSI color escape
+        # sequences in subsequent substitutions. So we operate on the data a
+        # character at time here.
+        nbuf = ""
+        for c in buf:
+            if ord(c) in color_chars:
+                nbuf += Color_Codes[color_chars[ord(c)]] + c + Color_Code_Reset
+            else:
+                nbuf += c
+        return nbuf
+    return f
+
+def output_processor_hexadecimal(color_chars, interpret_newlines=False):
+    # State to keep track of our x position
+    state = [0]
+    # Format buffer into 2-column hexadecimal representation, with optional
+    # color coding and newline interpretation.
+    def f(buf):
+        nbuf = ""
+        for c in buf:
+            # Color code this character if it's in our color chars dictionary
+            if len(color_chars) > 0 and ord(c) in color_chars:
+                nbuf += Color_Codes[color_chars[ord(c)]] + ("%02x" % ord(c)) + Color_Code_Reset
+            else:
+                nbuf += "%02x" % ord(c)
+
+            state[0] += 1
+
+            # Pretty print into two columns
+            if state[0] == Hexadecimal_Columns/2:
+                nbuf += "  "
+            elif state[0] == Hexadecimal_Columns:
+                nbuf += os.linesep
+                state[0] = 0
+            else:
+                nbuf += " "
+
+            # Insert a newline if we encounter one and we're interpreting them
+            # FIXME: This assumes a single character platform newline.
+            if interpret_newlines and c == os.linesep:
+                nbuf += os.linesep
+                state[0] = 0
+        return nbuf
+    return f
+
+def output_processor_split(color_chars, partial_lines=True):
+    # Helper function to format one line of split hexadecimal/ASCII
+    # representation with optional color coding.
+    def format_split_line(buf):
+        nbuf = ""
+        # Format the hexadecimal representation
+        for i in range(len(buf)):
+            # Color code this character if it's in our color chars
+            if len(color_chars) > 0 and ord(buf[i]) in color_chars:
+                nbuf += Color_Codes[color_chars[ord(buf[i])]] + ("%02x" % ord(buf[i])) + Color_Code_Reset
+            else:
+                nbuf += "%02x" % ord(buf[i])
 
             # Pretty print into two columns
             if (i+1) == Hexadecimal_Columns/2:
-                fd_write(stdout_fd, "  ")
+                nbuf += "  "
             else:
-                fd_write(stdout_fd, " ")
+                nbuf += " "
 
-        # Fill up the rest of the hexadecimal representation
-        # with blank space
-        if len(byte_list) < Hexadecimal_Columns/2:
+        # Format hexadecimal column blank spaces
+        if len(buf) < Hexadecimal_Columns/2:
             # Account for the pretty print column separator
-            fd_write(stdout_fd, " " + " "*(3*(Hexadecimal_Columns-len(byte_list))))
-        elif len(byte_list) < Hexadecimal_Columns:
-            fd_write(stdout_fd, " "*(3*(Hexadecimal_Columns-len(byte_list))))
+            nbuf += " " + " "*(3*(Hexadecimal_Columns-len(buf)))
+        else:
+            nbuf += " "*(3*(Hexadecimal_Columns-len(buf)))
 
-        # Print the ASCII representation
-        fd_write(stdout_fd, " |")
-        for i in range(len(byte_list)):
-            # Use the character if it's an ASCII printable
-            # character, otherwise use a dot
-            if byte_list[i] in string.letters+string.digits+string.punctuation+' ':
-                c = byte_list[i]
+        # Format the ASCII representation
+        nbuf += " |"
+        for i in range(len(buf)):
+            c = "."
+
+            # Use the character if it's an ASCII printable character, otherwise use
+            # a dot
+            if buf[i] in string.letters+string.digits+string.punctuation+' ':
+                c = buf[i]
+
+            # Color code this character if it's in our color chars
+            if len(color_chars) > 0 and ord(buf[i]) in color_chars:
+                nbuf += Color_Codes[color_chars[ord(buf[i])]] + c + Color_Code_Reset
             else:
-                c = "."
-            # Color code this character if it's in our
-            # color chars dictionary
-            if len(Color_Chars) > 0 and ord(byte_list[i]) in Color_Chars:
-                fd_write(stdout_fd, Color_Codes[Color_Chars[ord(byte_list[i])]] + c + Color_Code_Reset)
+                nbuf += c
+
+        # Format ASCII column blank spaces
+        if len(buf) < Hexadecimal_Columns:
+            nbuf += " "*(Hexadecimal_Columns-len(buf))
+
+        nbuf += "|"
+
+        return nbuf
+
+    # State to keep track of bytes on the current line
+    state = [""]
+    # Format buf into a split hexadecimal/ASCII representation, with optional
+    # color coding.
+    def f(buf):
+        if len(buf) == 0:
+            return ""
+
+        nbuf = ""
+
+        state[0] += buf
+
+        # Erase current partial line with \r
+        if partial_lines and len(state[0]) > 0:
+            nbuf += "\r"
+
+        # Process each full line at a time
+        for i in range(0, len(state[0]), Hexadecimal_Columns):
+            line = state[0][i:i+Hexadecimal_Columns]
+
+            if len(line) < Hexadecimal_Columns:
+                if partial_lines:
+                    nbuf += format_split_line(line)
             else:
-                fd_write(stdout_fd, c)
-        fd_write(stdout_fd, "|")
+                nbuf += format_split_line(line)
+                nbuf += os.linesep
 
-    for x in data:
-        # Add to our split byte window
-        stdout_split_bytes.append(x)
-        # If we get a full column window, print it out with a
-        # newline
-        if len(stdout_split_bytes) == Hexadecimal_Columns:
-            split_print(stdout_split_bytes)
-            fd_write(stdout_fd, Console_Newline)
-            stdout_split_bytes = []
+        # Remove processed full lines from our state
+        state[0] = state[0][len(state[0])-(len(state[0]) % Hexadecimal_Columns):len(state[0])]
+        return nbuf
+    return f
 
-    # Print partially completed strings
-    if partial_print:
-        # Print out any bytes left in our window
-        if len(stdout_split_bytes) > 0:
-            split_print(stdout_split_bytes)
-
-def format_print_split_full_lines(stdout_fd, data):
-    format_print_split(stdout_fd, data, partial_print=False)
-
-###########################################################################
+###############################################################################
 ### Main Read/Write Loop
-###########################################################################
+###############################################################################
 
 def read_write_loop(serial_fd, stdin_fd, stdout_fd):
-    # Look up our formatting options
-    txnl_sub = TX_Newline_Sub[Format_Options['transmit_newline']]
-    rxnl_sub = RX_Newline_Sub[Format_Options['receive_newline']]
-    input_mode = Format_Options['input_mode']
-    format_print = {
-            'raw': format_print_raw,
-            'split': format_print_split,
-            'splitfull': format_print_split_full_lines,
-            'hex': format_print_hexadecimal,
-            'hexnl': format_print_hexadecimal_newline,
-        }[Format_Options['output_mode']]
+    ### Prepare our input pipeline
+    input_pipeline = []
+    # Hexadecimal interpretation
+    if Format_Options['input_mode'] == "hex":
+        input_pipeline.append(input_processor_hexadecimal())
+    # Transmit newline substitution
+    if TX_Newline_Sub[Format_Options['transmit_newline']] is not None:
+        input_pipeline.append(input_processor_newline(TX_Newline_Sub[Format_Options['transmit_newline']]))
+
+    ### Prepare our output pipeline
+    output_pipeline = []
+    # Receive newline substitution
+    if RX_Newline_Sub[Format_Options['receive_newline']] is not None:
+        output_pipeline.append(output_processor_newline(RX_Newline_Sub[Format_Options['receive_newline']]))
+    # Raw mode
+    if Format_Options['output_mode'] == 'raw':
+        output_pipeline.append(output_processor_raw(Format_Options['color_chars']))
+    # Split mode
+    elif Format_Options['output_mode'] == 'split':
+        output_pipeline.append(output_processor_split(Format_Options['color_chars']))
+    # Split full mode
+    elif Format_Options['output_mode'] == 'splitfull':
+        output_pipeline.append(output_processor_split(Format_Options['color_chars'], partial_lines=False))
+    # Hexadecimal mode
+    elif Format_Options['output_mode'] == 'hex':
+        output_pipeline.append(output_processor_hexadecimal(Format_Options['color_chars']))
+    # Hexadecimal with newlines mode
+    elif Format_Options['output_mode'] == 'hexnl':
+        output_pipeline.append(output_processor_hexadecimal(Format_Options['color_chars'], interpret_newlines=True))
 
     # Select between serial port and stdin file descriptors
     read_fds = [serial_fd, stdin_fd]
@@ -475,52 +506,48 @@ def read_write_loop(serial_fd, stdin_fd, stdout_fd):
         if stdin_fd in ready_read_fds:
             # Read a buffer from stdin
             try:
-                buff = fd_read(stdin_fd, READ_BUFF_SIZE)
+                buf = fd_read(stdin_fd, READ_BUF_SIZE)
             except Exception as err:
                 raise Exception("Error reading stdin: %s\n" % str(err))
 
-            # Process and write the buffer to the serial port
-            if buff and len(buff) > 0:
-                # If we detect the escape character, then quit
-                if chr(Quit_Escape_Character) in buff:
-                    break
+            # If we detect the escape character, quit
+            if chr(Quit_Escape_Character) in buf:
+                break
 
-                # Perform transmit newline subsitutions
-                if txnl_sub != None:
-                    buff = format_tx_nlsub(buff, txnl_sub)
+            # Process the buffer through our input pipeline
+            for f in input_pipeline:
+                buf = f(buf)
 
-                # Perform hexadecimal interpretation
-                if input_mode == 'hex':
-                    buff = format_tx_hex(buff)
-
-                # Write the buffer to the serial port
-                try:
-                    fd_write(serial_fd, buff)
-                except Exception as err:
-                    raise Exception("Error writing to serial port: %s\n" % str(err))
+            # Write the buffer to the serial port
+            try:
+                fd_write(serial_fd, buf)
+            except Exception as err:
+                raise Exception("Error writing to serial port: %s\n" % str(err))
 
         if serial_fd in ready_read_fds:
             # Read a buffer from the serial port
             try:
-                buff = fd_read(serial_fd, READ_BUFF_SIZE)
+                buf = fd_read(serial_fd, READ_BUF_SIZE)
             except Exception as err:
                 raise Exception("Error reading serial port: %s\n" % str(err))
 
-            # Format and print the buffer to the console
-            if buff and len(buff) > 0:
-                # Perform receive newline substitutions
-                if rxnl_sub != None:
-                    buff = format_rx_nlsub(buff, rxnl_sub)
+            # Break if we hit "EOF"
+            if len(buf) == 0:
+                break
 
-                # Print to stdout
-                try:
-                    format_print(stdout_fd, buff)
-                except Exception as err:
-                    raise Exception("Error writing to stdout: %s\n" % str(err))
+            # Process the buffer through our output pipeline
+            for f in output_pipeline:
+                buf = f(buf)
 
-###########################################################################
-### Help and Command-Line Options Parsing
-###########################################################################
+            # Write the buffer to stdout
+            try:
+                fd_write(stdout_fd, buf)
+            except Exception as err:
+                raise Exception("Error writing to stdout: %s\n" % str(err))
+
+###############################################################################
+### Command-Line Options Parsing and Help
+###############################################################################
 
 def print_usage():
     print "Usage: %s [options] <serial port device>\n" % sys.argv[0]
@@ -627,11 +654,11 @@ if __name__ == '__main__':
             if len(opt_arg) > len(Color_Codes):
                 sys.stderr.write("Error: Maximum color code characters (%d) exceeded!\n" % len(Color_Codes))
                 sys.exit(-1)
-            # Parse ASCII and hex encoded characters into our Color_Chars dictionary
+            # Parse ASCII and hex encoded characters into our color_chars dictionary
             for c in opt_arg:
                 # ASCII character
                 if len(c) == 1:
-                    Color_Chars[ord(c)] = len(Color_Chars)
+                    Format_Options['color_chars'][ord(c)] = len(Format_Options['color_chars'])
                 # Hexadecimal number
                 elif len(c) > 2 and c[0:2] == "0x":
                     try:
@@ -639,7 +666,7 @@ if __name__ == '__main__':
                     except ValueError:
                         sys.stderr.write("Error: Unknown color code character: %s\n" % c)
                         sys.exit(-1)
-                    Color_Chars[c_int] = len(Color_Chars)
+                    Format_Options['color_chars'][c_int] = len(Format_Options['color_chars'])
                 # Unknown
                 else:
                     sys.stderr.write("Error: Unknown color code character: %s\n" % c)
@@ -695,6 +722,7 @@ if __name__ == '__main__':
         sys.stderr.write("Error opening stdout in raw mode: %s\n" % str(err))
         sys.exit(-1)
 
+    # Enter main read/write loop
     try:
         read_write_loop(serial_fd, stdin_fd, stdout_fd)
     except Exception as err:
@@ -703,7 +731,7 @@ if __name__ == '__main__':
 
     print ""
 
-    # Reset our console to buffered mode
+    # Reset stdin to buffered mode
     try:
         stdin_reset()
     except Exception as err:
