@@ -561,8 +561,9 @@ Output Formatting Options:\n\
                                   hex       hex.\n\
                                   hexnl     hex. with newlines\n\
 \n\
-  --rx-nl <substitution>        Enable receive newline substitution\n\
-                                  [raw, cr, lf, crlf, crorlf]\n\
+  --rx-nl <substitution>        Enable substitution of the specified newline\n\
+                                for the system's newline upon reception\n\
+                                  [cr, lf, crlf, crorlf]\n\
 \n\
   -c, --color <list>            Specify comma-delimited list of characters in\n\
                                   ASCII or hex. to color code: A,$,0x0d,0x0a,...\n\
@@ -572,8 +573,9 @@ Input Formatting Options:\n\
                                   raw       raw (default)\n\
                                   hex       hex. interpretaion\n\
 \n\
-  --tx-nl <substitution>        Enable transmit newline substitution\n\
-                                  [raw, none, cr, lf, crlf]\n\
+  --tx-nl <substitution>        Enable substitution of the system's newline\n\
+                                for the specified newline upon transmission\n\
+                                  [none, cr, lf, crlf]\n\
 \n\
   -e, --echo                    Enable local character echo\n\
 \n\
@@ -635,7 +637,7 @@ if __name__ == '__main__':
             Format_Options['output_mode'] = opt_arg
         elif opt_c == "--tx-nl":
             if not opt_arg in TX_Newline_Sub:
-                sys.stderr.write("Error: Invalid tx newline type!\n")
+                sys.stderr.write("Error: Invalid tx newline substitution!\n")
                 print_usage()
                 sys.exit(-1)
             Format_Options['transmit_newline'] = opt_arg
@@ -672,7 +674,7 @@ if __name__ == '__main__':
             Format_Options['input_mode'] = opt_arg
         elif opt_c == "--rx-nl":
             if not opt_arg in RX_Newline_Sub:
-                sys.stderr.write("Error: Invalid rx newline type!\n")
+                sys.stderr.write("Error: Invalid rx newline substitution!\n")
                 print_usage()
                 sys.exit(-1)
             Format_Options['receive_newline'] = opt_arg
