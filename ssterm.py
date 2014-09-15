@@ -91,7 +91,7 @@ TX_Newline_Sub = {'raw': None, 'cr': "\r", 'crlf': "\r\n", 'lf': "\n", 'none': "
 def serial_open(device_path, tty_options):
     # Open the tty device
     try:
-        fd = os.open(device_path, os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK)
+        fd = os.open(device_path, os.O_RDWR | os.O_NOCTTY)
     except OSError as err:
         raise Exception("%s" % str(err))
 
@@ -267,19 +267,10 @@ def stdin_reset():
 ###########################################################################
 
 def fd_read(fd, n):
-    try:
-        return os.read(fd, n)
-    except OSError as err:
-        # Check if non-blocking read returned 0
-        if err.errno == errno.EWOULDBLOCK:
-            return ""
-        raise Exception(str(err))
+    return os.read(fd, n)
 
 def fd_write(fd, data):
-    try:
-        return os.write(fd, data)
-    except OSError as err:
-        raise Exception(str(err))
+    return os.write(fd, data)
 
 ###########################################################################
 ### Receive and transmit newline substitutions
