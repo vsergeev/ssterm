@@ -258,16 +258,6 @@ def stdin_reset():
         raise Exception("Setting stdin tty options: %s" % str(err))
 
 ###############################################################################
-### fd read and write
-###############################################################################
-
-def fd_read(fd, n):
-    return os.read(fd, n)
-
-def fd_write(fd, data):
-    return os.write(fd, data)
-
-###############################################################################
 ### Input Processors
 ###############################################################################
 
@@ -506,7 +496,7 @@ def read_write_loop(serial_fd, stdin_fd, stdout_fd):
         if stdin_fd in ready_read_fds:
             # Read a buffer from stdin
             try:
-                buf = fd_read(stdin_fd, READ_BUF_SIZE)
+                buf = os.read(stdin_fd, READ_BUF_SIZE)
             except Exception as err:
                 raise Exception("Error reading stdin: %s\n" % str(err))
 
@@ -520,14 +510,14 @@ def read_write_loop(serial_fd, stdin_fd, stdout_fd):
 
             # Write the buffer to the serial port
             try:
-                fd_write(serial_fd, buf)
+                os.write(serial_fd, buf)
             except Exception as err:
                 raise Exception("Error writing to serial port: %s\n" % str(err))
 
         if serial_fd in ready_read_fds:
             # Read a buffer from the serial port
             try:
-                buf = fd_read(serial_fd, READ_BUF_SIZE)
+                buf = os.read(serial_fd, READ_BUF_SIZE)
             except Exception as err:
                 raise Exception("Error reading serial port: %s\n" % str(err))
 
@@ -541,7 +531,7 @@ def read_write_loop(serial_fd, stdin_fd, stdout_fd):
 
             # Write the buffer to stdout
             try:
-                fd_write(stdout_fd, buf)
+                os.write(stdout_fd, buf)
             except Exception as err:
                 raise Exception("Error writing to stdout: %s\n" % str(err))
 
