@@ -561,7 +561,7 @@ Serial Port Options:\n\
   -d, --databits <number>       Specify number of data bits [5,6,7,8]\n\
   -p, --parity <type>           Specify parity [none, odd, even]\n\
   -t, --stopbits <number>       Specify number of stop bits [1,2]\n\
-  -f, --flow-control <type>     Specify flow-control [none, rtscts, xonxoff]\n\
+  -f, --flow-control <type>     Specify flow control [none, rtscts, xonxoff]\n\
 \n\
 Output Formatting Options:\n\
   -o, --output <mode>           Specify output mode\n\
@@ -576,12 +576,12 @@ Output Formatting Options:\n\
                                   [cr, lf, crlf, crorlf]\n\
 \n\
   -c, --color <list>            Specify comma-delimited list of characters in\n\
-                                  ASCII or hex. to color code: A,$,0x0d,0x0a,...\n\
+                                ASCII or hex. to color code: A,$,0x0d,0x0a,...\n\
 \n\
 Input Formatting Options:\n\
   -i, --input <mode>            Specify input mode\n\
                                   raw       raw (default)\n\
-                                  hex       hex. interpretaion\n\
+                                  hex       hex. interpretation\n\
 \n\
   --tx-nl <substitution>        Enable substitution of the system's newline\n\
                                 for the specified newline upon transmission\n\
@@ -598,7 +598,7 @@ Quit Escape Character:          Ctrl-]\n\
 Default Options:\n\
  baudrate: 115200 | databits: 8 | parity: none | stopbits: 1 | flowctrl: none\n\
  output mode: raw | rx newline: raw | color code: off\n\
- input mode: raw  | tx newline: raw | local echo: off\n"
+ input mode: raw  | tx newline: raw | local echo: off"
 
 def print_version():
     print "ssterm version 1.8 - 09/13/2014"
@@ -613,45 +613,45 @@ if __name__ == '__main__':
         sys.exit(-1)
 
     # Update options containers
-    for opt_c, opt_arg in options:
+    for opt, opt_arg in options:
         # Serial port options
-        if opt_c in ("-b", "--baudrate"):
+        if opt in ("-b", "--baudrate"):
             try:
                 TTY_Options['baudrate'] = int(opt_arg, 10)
             except ValueError:
                 sys.stderr.write("Error: Invalid tty baudrate!\n")
                 sys.exit(-1)
-        elif opt_c in ("-d", "--databits"):
+        elif opt in ("-d", "--databits"):
             try:
                 TTY_Options['databits'] = int(opt_arg, 10)
             except ValueError:
                 sys.stderr.write("Error: Invalid tty data bits!\n")
                 sys.exit(-1)
-        elif opt_c in ("-p", "--parity"):
+        elif opt in ("-p", "--parity"):
             TTY_Options['parity'] = opt_arg
-        elif opt_c in ("-t", "--stopbits"):
+        elif opt in ("-t", "--stopbits"):
             try:
                 TTY_Options['stopbits'] = int(opt_arg, 10)
             except ValueError:
                 sys.stderr.write("Error: Invalid tty stop bits!\n")
                 sys.exit(-1)
-        elif opt_c in ("-f", "--flow-control"):
+        elif opt in ("-f", "--flow-control"):
             TTY_Options['flow_control'] = opt_arg
 
         # Output Formatting Options
-        elif opt_c in ("-o", "--output"):
+        elif opt in ("-o", "--output"):
             if not opt_arg in ["raw", "split", "splitfull", "hex", "hexnl"]:
                 sys.stderr.write("Error: Invalid output mode!\n")
                 print_usage()
                 sys.exit(-1)
             Format_Options['output_mode'] = opt_arg
-        elif opt_c == "--tx-nl":
+        elif opt == "--tx-nl":
             if not opt_arg in TX_Newline_Sub:
                 sys.stderr.write("Error: Invalid tx newline substitution!\n")
                 print_usage()
                 sys.exit(-1)
             Format_Options['transmit_newline'] = opt_arg
-        elif opt_c in ("-c", "--color"):
+        elif opt in ("-c", "--color"):
             opt_arg = filter(lambda x: len(x) >= 1, opt_arg.split(","))
             if len(opt_arg) > len(Color_Codes):
                 sys.stderr.write("Error: Maximum number of color code characters (%d) exceeded!\n" % len(Color_Codes))
@@ -676,26 +676,26 @@ if __name__ == '__main__':
                     sys.exit(-1)
 
         # Input Formatting Options
-        elif opt_c in ("-i", "--input"):
+        elif opt in ("-i", "--input"):
             if not opt_arg in ["raw", "hex"]:
                 sys.stderr.write("Error: Invalid input mode!\n")
                 print_usage()
                 sys.exit(-1)
             Format_Options['input_mode'] = opt_arg
-        elif opt_c == "--rx-nl":
+        elif opt == "--rx-nl":
             if not opt_arg in RX_Newline_Sub:
                 sys.stderr.write("Error: Invalid rx newline substitution!\n")
                 print_usage()
                 sys.exit(-1)
             Format_Options['receive_newline'] = opt_arg
-        elif opt_c in ("-e", "--echo"):
+        elif opt in ("-e", "--echo"):
             Format_Options['echo'] = True
 
         # Miscellaneous Options
-        elif opt_c in ("-h", "--help"):
+        elif opt in ("-h", "--help"):
             print_usage()
             sys.exit(0)
-        elif opt_c in ("-v", "--version"):
+        elif opt in ("-v", "--version"):
             print_version()
             sys.exit(0)
 
