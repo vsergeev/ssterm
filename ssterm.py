@@ -199,6 +199,11 @@ def serial_close(fd):
 def stdin_raw_open(echo):
     fd = sys.stdin.fileno()
 
+    # If stdin is not a TTY (e.g. is a pipe), we don't need to reconfigure the
+    # TTY
+    if not os.isatty(fd):
+        return fd
+
     # Get the current stdin tty options
     #   [iflag, oflag, cflag, lflag, ispeed, ospeed, cc]
     try:
@@ -235,6 +240,11 @@ def stdout_raw_open():
 
 def stdin_reset():
     fd = sys.stdin.fileno()
+
+    # If stdin is not a TTY (e.g. is a pipe), we don't need to reconfigure the
+    # TTY
+    if not os.isatty(fd):
+        return fd
 
     # Reset stdin terminal for canonical input, echo, and signals
 
