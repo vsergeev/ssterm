@@ -1,6 +1,14 @@
+* Release 2.0 - 09/16/2014
+    * Refactor codebase.
+    * Add support for hexadecimal input mode.
+    * Add support for piped standard input.
+    * Fix handling of removed serial port.
+    * Simplify CLI options with output mode and input mode options.
+    * Add unit tests for input and output processors.
+    * Relicense under MIT license.
 * Release 1.7 - 12/16/2013
     * Add support for higher baudrates.
-    * Add support for abitrary baudrates via BOTHER.
+    * Add support for arbitrary baudrates via BOTHER.
     * Clean up codebase some more.
 * Release 1.6 - 02/11/2013
     * Switched to gnu_getopt to allow command-line options after serial port device argument.

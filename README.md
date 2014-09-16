@@ -1,115 +1,139 @@
 ## ABOUT ssterm
 
-ssterm is a simple console-based serial port terminal. It features painless serial port configuration, no dependencies outside of a standard Python 2 installation, and a variety of useful input/output features:
+ssterm is a simple console-based serial port terminal. It features painless
+serial port configuration, no dependencies outside of a standard Python 2
+installation, and a variety of useful formatting features:
 
-  * plain ASCII representation
-  * split hexadecimal/ASCII representation
-  * pure hexadecimal representation with optional newline interpretation
-  * color coding bytes in all three ASCII, split, and hexadecimal modes
-  * raw terminal with control character forwarding
-  * transmit newline character remapping (e.g. LF -> CRLF)
-  * receive newline character remapping (e.g. CR -> LF)
+  * output modes
+    * raw
+    * hexadecimal
+    * hexadecimal/ASCII split
+  * input modes
+    * raw
+    * hexadecimal
+  * transmit newline remapping (e.g. system newline -> CRLF)
+  * receive newline remapping (e.g. CRLF -> system newline)
+  * character color coding
   * local character echo
 
-![](ssterm_screenshot.png)
-
-ssterm is written in Python 2, and should work on most *nix platforms. It works with both CPython and pypy implementations of Python. Feel free to send any bugs, ideas, or suggestions to vsergeev at gmail or the [GitHub issues page](https://github.com/vsergeev/ssterm/issues/).
+ssterm is written in Python 2, and should work on most *nix platforms. It runs
+under both CPython and pypy implementations of Python. Feel free to send any
+issues, ideas, or suggestions to vsergeev at gmail or the [GitHub issues
+page](https://github.com/vsergeev/ssterm/issues/).
 
 ## USAGE
 
-    Usage: ssterm [options] <serial port>
+    Usage: /usr/bin/ssterm [options] <serial port device>
     
-    ssterm - simple serial-port terminal
-    Written by Vanya A. Sergeev - <vsergeev@gmail.com>.
+    ssterm - simple serial-port terminal v2.0
+    Vanya A. Sergeev - <vsergeev@gmail.com>
+    https://github.com/vsergeev/ssterm
     
-     Serial Port Options:
-      -b, --baudrate <rate>         Specify baudrate (e.g., 9600, 115200, etc.)
+    Serial Port Options:
+      -b, --baudrate <rate>         Specify baudrate (e.g. 9600, 115200, etc.)
       -d, --databits <number>       Specify number of data bits [5,6,7,8]
       -p, --parity <type>           Specify parity [none, odd, even]
       -t, --stopbits <number>       Specify number of stop bits [1,2]
-      -f, --flow-control <type>     Specify flow-control [none, rtscts, xonxoff]
+      -f, --flow-control <type>     Specify flow control [none, rtscts, xonxoff]
     
-     Formatting Options:
-      -s, --split                   Split hexadecimal/ASCII mode
+    Output Formatting Options:
+      -o, --output <mode>           Specify output mode
+                                      raw       raw (default)
+                                      split     hex./ASCII split
+                                      splitfull hex./ASCII split with full lines
+                                      hex       hex.
+                                      hexnl     hex. with newlines
     
-      --split-full			        Split hexadecimal/ASCII mode with full lines
-                                      (better for piping than --split)
-    
-      -x, --hex                     Hexadecimal mode
-    
-      --hex-nl                      Hexadecimal mode with newline interpretation\n\
+      --rx-nl <substitution>        Enable substitution of the specified newline
+                                    for the system's newline upon reception
+                                      [cr, lf, crlf, crorlf]
     
       -c, --color <list>            Specify comma-delimited list of characters in
-                                      ASCII or hex to color code: A,$,0x0d,0x0a,...
+                                    ASCII or hex. to color code: A,$,0x0d,0x0a,...
     
-      --tx-nl <substitution>        Specify the transmit newline substitution
-                                      [raw, none, cr, lf, crlf]
-      --rx-nl <match>               Specify the receive newline match
-                                      [raw, cr, lf, crlf, crorlf]
+    Input Formatting Options:
+      -i, --input <mode>            Specify input mode
+                                      raw       raw (default)
+                                      hex       hex. interpretation
     
-      -e, --echo                    Turn on local character echo
+      --tx-nl <substitution>        Enable substitution of the system's newline
+                                    for the specified newline upon transmission
+                                      [none, cr, lf, crlf]
     
+      -e, --echo                    Enable local character echo
+    
+    Miscellaneous:
       -h, --help                    Display this usage/help
       -v, --version                 Display the program's version
     
     
     Quit Escape Character:          Ctrl-]
     
-    Color Code Sequence (fg/bg):
-     Black/Red, Black/Green, Black/Yellow, White/Blue, White/Magenta,
-     Black/Cyan, Black/White
-    
     Default Options:
-     baudrate: 115200 | databits: 8 | parity: none | stopbits: 1 | flow ctrl: none
-     tx newline: raw | rx newline: raw | local echo: off
-     split mode: off | hex mode: off   | color code: off
+     baudrate: 115200 | databits: 8 | parity: none | stopbits: 1 | flowctrl: none
+     output mode: raw | rx newline: raw | color code: off
+     input mode: raw  | tx newline: raw | local echo: off
 
 ## LICENSE
 
-ssterm is released under the GNU General Public License Version 3.
-
-    You should have received a copy of the GNU General Public License
-    along with this program; see the file "COPYING".  If not, see
-    <http://www.gnu.org/licenses/>.
+ssterm is MIT licensed. See the provided `LICENSE` file.
 
 ## USING ssterm
 
-By default, ssterm will open the specified serial port with 115200 baudrate, 8 data bits, no parity, 1 stop bit, and no flow control. These settings can be adjusted with the `-b, --baudrate`, `-d, --databits`, `-p, --parity`, `-t, --stopbits`, and `-f, --flow-control` options (see usage below).
+`Ctrl-]` is ssterm's quit escape character.
 
-ssterm opens the input terminal in raw mode, so all characters and control signals are passed through transparently to the serial port. This enables interacting with terminal interfaces over the serial port that interpret control characters, such as a Linux termios on an embedded system. The only exception is Ctrl-], which serves as ssterm's quit escape character.
+### Serial Port Options
 
-ssterm can display output in split hexadecimal/ASCII mode, with the `-s, --split` option. This mode will format data in the split mode as it is received, updating the hexadecimal and ASCII columns by clearing and re-drawing the line until it is full width.  For a split hexadecimal/ASCII representation suitable for piping to another program or file, `--split-full` should be used, to print full column width data without re-drawing.
+By default, ssterm opens the specified serial port with 115200 baudrate, 8 data
+bits, no parity, 1 stop bit, and no flow control. These serial port settings
+can be configured with the `-b, --baudrate`, `-d, --databits`, `-p, --parity`,
+`-t, --stopbits`, and `-f, --flow-control` options.
 
-ssterm can color code particular characters, specified by a comma-delimited list with the `-c, --color` option. The list can contain ASCII entries (e.g.  `a,_,A,...`), as well as hexadecimal entries (e.g. `0x0a,0xff,...`). There is currently a maximum of seven distinct colors, assigned sequentially to the specified characters in the following order (foreground/background): Black/Red, Black/Green, Black/Yellow, White/Blue, White/Magenta, Black/Cyan, Black/White.
+### Output Formatting Options
 
-ssterm can also display output in pure hexadecimal mode, with the `-x, --hex` option, and interpret newlines in this mode with the `--hex-nl` option.
+The `-o, --output` option selects the output mode. In the default `raw` output
+mode, received characters are written directly to standard output. In `hex`
+output mode, received characters are printed as hexadecimal bytes. In `hexnl`
+output mode, received characters are printed as hexadecimal bytes, but newlines
+are also interpreted and produce line breaks in the output. In `split` output
+mode, received characters are printed in both hexadecimal and ASCII in two
+columns, like hexdump's canonical output. `splitfull` output mode functions
+like `split` mode, except that it only prints full lines, whereas `split` mode
+redraws partial lines as additional bytes are received.
 
-Plain ASCII representation mode is default.
+The `--rx-nl` receive newline substitution option enables substituting the
+specified newline for the system newline before printing. For example, `--rx-nl
+crlf` will substitute any CRLF sequence received for the system's newline (e.g.
+LF on Linux) before printing. Receive newline substitution is disabled by
+default.
 
-The newline characters can be remapped upon transmission and remapped upon reception. These mappings are specified with the `--tx-nl` and `--rx-nl` options.  These options were created to accommodate working with the serial port on LF based systems, but the functionality should extend to CR and CRLF based systems as well. The substitution and matching can be disabled by selecting 'raw' mode for both `--tx-nl` and `--rx-nl` options.
+The `-c, --color` option enables color coding the specified comma-delimited
+list of characters. The list can contain ASCII characters (e.g. `a,$,A,...`),
+as well as hexadecimal bytes (e.g. `0x0a,0xff,...`). Up to seven distinct
+colors are assigned sequentially to the specified characters, in the order of:
+(Foreground/Background) Black/Red, Black/Green, Black/Yellow, White/Blue,
+White/Magenta, Black/Cyan, Black/White.
 
-The following receive newline character remappings are available:
+### Input Formatting Options
 
-  * `raw` - no remapping of received newline characters
-  * `cr` - map received CR to platform newline
-  * `lf` - map received LF to platform newline
-  * `crlf` - map received CRLF to platform newline
-  * `crorlf` - map any received CR or LF to platform newline
+The `-i, --input` option selects the input mode. In the default `raw` input
+mode, all input characters and control signals are written directly to the
+serial port. In the `hex` input mode, consecutive hexadecimal pairs are
+converted to bytes and written to the serial port. For example, all four
+sequences `aa 55 ee ff`, `0xaa 0x55 0xee 0xff`, `AA,55,EE,FF`, `aa55eeff` will
+write the same four bytes (0xaa, 0x55, 0xee, 0xff) to the serial port in the
+`hex` input mode.
 
-The following transmit newline character remappings are available:
+The `--tx-nl` transmit newline substitution option enables substituting the
+system newline for the specified newline before transmission. For example,
+`--tx-nl crlf` will substitute the system's newline for a CRLF sequence before
+it is written to the serial port. Transmit newline substitution is disabled by
+default.
 
-  * `raw` - no remapping of transmit newline characters
-  * `none` - omit newline characters on transmit
-  * `cr` - map platform newline to CR on transmit
-  * `lf` - map platform newline to LF on transmit
-  * `crlf` - map platform newline to CRLF on transmit
+The `-e, --echo` option enables local character echo. Local character echo is
+disabled by default.
 
-The default receive newline character mapping (`--rx-nl` option) is raw.
-The default transmit newline character mapping (`--tx-nl` option) is raw.
-
-Other options include local character echo, which is off by default.
-
-## Example Usage
+## Examples
 
 Typical usage with defaults (115200 8N1, no flow control):
 
@@ -123,18 +147,55 @@ Viewing and logging some data, with the help of tee:
 
     $ ssterm /dev/ttyUSB0 | tee nmea_data.txt
 
-Specific serial port settings (115200 baudrate, odd parity, 2 stop bits), and
-the default 8 data bits:
+Piping some data to the serial port, substituting the system newline for CRLF
+on transmission:
 
-    $ ssterm -b 115200 -p odd -t 2 /dev/ttyUSB0
+    $ cat data.txt | ssterm --tx-nl crlf /dev/ttyUSB0
 
-CRLF for transmitted newlines, but LF for received newlines:
+Specific serial port settings (9600 baudrate, odd parity, 2 stop bits), and the
+default 8 data bits:
 
-    $ ssterm --tx-nl crlf --rx-nl lf /dev/ttyUSB0
+    $ ssterm -b 9600 -p odd -t 2 /dev/ttyUSB0
 
-Split representation mode:
+Substitute the system newline for CRLF on transmission, substitute CRLF for system
+newline on reception:
 
-    $ ssterm -s /dev/ttyUSB0
+    $ ssterm --tx-nl crlf --rx-nl crlf /dev/ttyUSB0
+
+Normal output mode:
+
+    $ ssterm /dev/ttyUSB0
+    $GPGGA,082830.821,,,,,0,00,,,M,0.0,M,,0000*5C
+    $GPGSA,A,1,,,,,,,,,,,,,,,*1E
+    $GPRMC,082830.821,V,,,,,,,261009,,*29
+    $GPGGA,082831.814,,,,,0,00,,,M,0.0,M,,0000*5B
+    $GPGSA,A,1,,,,,,,,,,,,,,,*1E
+    $GPRMC,082831.814,V,,,,,,,261009,,*2E
+    $GPGGA,08
+
+Hexadecimal output mode:
+
+    $ ssterm -o hex /dev/ttyUSB0
+    24 47 50 47 47 41 2c 30  38 32 38 33 30 2e 38 32
+    31 2c 2c 2c 2c 2c 30 2c  30 30 2c 2c 2c 4d 2c 30
+    2e 30 2c 4d 2c 2c 30 30  30 30 2a 35 43 0d 0a 24
+    47 50 47 53 41 2c 41 2c  31 2c 2c 2c 2c 2c 2c 2c
+    2c 2c 2c 2c 2c 2c 2c 2c  2a 31 45 0d 0a 24 47 50
+    52 4d 43 2c 30 38 32 38  33 30 2e 38 32 31 2c 56
+    2c 2c 2c 2c 2c 2c 2c 32  36 31 30 30 39 2c 2c 2a
+    32 39 0d 0a 24 47 50 47  47 41 2c 30 38 32 38 33
+    31 2e 38 31 34 2c 2c 2c  2c 2c 30 2c 30 30 2c 2c
+    2c 4d 2c 30 2e 30 2c 4d  2c 2c 30 30 30 30 2a 35
+    42 0d 0a 24 47 50 47 53  41 2c 41 2c 31 2c 2c 2c
+    2c 2c 2c 2c 2c 2c 2c 2c  2c 2c 2c 2c 2a 31 45 0d
+    0a 24 47 50 52 4d 43 2c  30 38 32 38 33 31 2e 38
+    31 34 2c 56 2c 2c 2c 2c  2c 2c 2c 32 36 31 30 30
+    39 2c 2c 2a 32 45 0d 0a  24 47 50 47 47 41 2c 30
+    38 
+
+Split output mode:
+
+    $ ssterm -o split /dev/ttyUSB0
     4c 6f 72 65 6d 20 69 70  73 75 6d 20 64 6f 6c 6f  |Lorem ipsum dolo|
     72 20 73 69 74 20 61 6d  65 74 2c 20 63 6f 6e 73  |r sit amet, cons|
     65 63 74 65 74 75 72 20  61 64 69 70 69 73 69 63  |ectetur adipisic|
@@ -153,58 +214,17 @@ Split representation mode:
     74 65 20 69 72 75 72 65  20 64 6f 6c 6f 72 20 69  |te irure dolor i|
     6e 20 72 65 70 72 65 68  65 6e 64 65 72 69 74 20  |n reprehenderit |
     69 6e 20 76 6f 6c 75 70  74 61 74 65 20 76 65 6c  |in voluptate vel|
-    69 74 20 65 73 73 65 20  63 69 6c 6c 75 6d 20 64  |it esse cillum d|
-    6f 6c 6f 72 65 20 65 75  20 66 75 67 69 61 74 20  |olore eu fugiat |
-    6e 75 6c 6c 61 20 70 61  72 69 61 74 75 72 2e 0a  |nulla pariatur..|
-    45 78 63 65 70 74 65 75  72 20 73 69 6e 74 20 6f  |Excepteur sint o|
-    63 63 61 65 63 61 74 20  63 75 70 69 64 61 74 61  |ccaecat cupidata|
-    74 20 6e 6f 6e 20 70 72  6f 69 64 65 6e 74 2c 20  |t non proident, |
-    73 75 6e 74 20 69 6e 20  63 75 6c 70 61 20 71 75  |sunt in culpa qu|
-    69 20 6f 66 66 69 63 69  61 20 64 65 73 65 72 75  |i officia deseru|
-    6e 74 20 6d 6f 6c 6c 69  74 20 61 6e 69 6d 20 69  |nt mollit anim i|
-    64 20 65 73 74 20 6c 61  62 6f 72 75 6d 2e 0a 00  |d est laborum...|
-    01 02 03 04 05 06 07 08  09 0a 0b 0c 0d 0e 0f 10  |................|
-    11 12 13 14 15 16 17 18  19 1a 1b 1c 1d 1e 1f 20  |............... |
-    21 22 23 24 25 26 27 28  29 2a 2b 2c 2d 2e 2f 30  |!"#$%&'()*+,-./0|
-    31 32 33 34 35 36 37 38  39 3a 3b 3c 3d 3e 3f 40  |123456789:;<=>?@|
-    41 42 43 44 45 46 47 48  49 4a 4b 4c 4d 4e 4f 50  |ABCDEFGHIJKLMNOP|
-    51 52 53 54 55 56 57 58  59 5a 5b 5c 5d 5e 5f 60  |QRSTUVWXYZ[\]^_`|
-    61 62 63 64 65 66 67 68  69 6a 6b 6c 6d 6e 6f 70  |abcdefghijklmnop|
-    71 72 73 74 75 76 77 78  79 7a 7b 7c 7d 7e 7f 80  |qrstuvwxyz{|}~..|
-    81 82 83 84 85 86 87 88  89 8a 8b 8c 8d 8e 8f 90  |................|
-    91 92 93 94 95 96 97 98  99 9a 9b 9c 9d 9e 9f a0  |................|
-    a1 a2 a3 a4 a5 a6 a7 a8  a9 aa ab ac ad ae af b0  |................|
-    b1 b2 b3 b4 b5 b6 b7 b8  b9 ba bb bc bd be bf c0  |................|
-    c1 c2 c3 c4 c5 c6 c7 c8  c9 ca cb cc cd ce cf d0  |................|
-    d1 d2 d3 d4 d5 d6 d7 d8  d9 da db dc dd de df e0  |................|
-    e1 e2 e3 e4 e5 e6 e7 e8  e9 ea eb ec ed ee ef f0  |................|
-    f1 f2 f3 f4 f5 f6 f7 f8  f9 fa fb fc fd fe ff     |...............|
+    69 74 20 65 73 73 65                              |it esse         |
 
-Split representation mode with character color coding:
+Split output mode and character color coding:
 
-    $ ssterm -s -c 0x0A,{,g,0xAE /dev/ttyUSB0
+    $ ssterm -o split -c 0x0A,{,g,0xAE /dev/ttyUSB0
 
-Hexadecimal representation mode:
+![](misc/screenshot1.png)
 
-    $ ssterm -x /dev/ttyUSB0
-    24 47 50 47 47 41 2c 30  38 32 38 33 30 2e 38 32
-    31 2c 2c 2c 2c 2c 30 2c  30 30 2c 2c 2c 4d 2c 30
-    2e 30 2c 4d 2c 2c 30 30  30 30 2a 35 43 0d 0a 24
-    47 50 47 53 41 2c 41 2c  31 2c 2c 2c 2c 2c 2c 2c
-    2c 2c 2c 2c 2c 2c 2c 2c  2a 31 45 0d 0a 24 47 50
-    52 4d 43 2c 30 38 32 38  33 30 2e 38 32 31 2c 56
-    2c 2c 2c 2c 2c 2c 2c 32  36 31 30 30 39 2c 2c 2a
-    32 39 0d 0a 24 47 50 47  47 41 2c 30 38 32 38 33
-    31 2e 38 31 34 2c 2c 2c  2c 2c 30 2c 30 30 2c 2c
-    2c 4d 2c 30 2e 30 2c 4d  2c 2c 30 30 30 30 2a 35
-    42 0d 0a 24 47 50 47 53  41 2c 41 2c 31 2c 2c 2c
-    2c 2c 2c 2c 2c 2c 2c 2c  2c 2c 2c 2c 2a 31 45 0d
-    0a 24 47 50 52 4d 43 2c  30 38 32 38 33 31 2e 38
-    31 34 2c 56 2c 2c 2c 2c  2c 2c 2c 32 36 31 30 30
-    39 2c 2c 2a 32 45 0d 0a  24 47 50 47 47 41 2c 30
-    38 
+Hexadecimal with newline interpretation output mode and character color coding:
 
-Hexadecimal representation mode, with newline interpretation and character color coding:
+    $ ssterm -o hexnl -c $,0x0a,0x0d /dev/ttyUSB0
 
-    $ ssterm -x --hex-nl -c $,0x0a,0x0d /dev/ttyUSB0
+![](misc/screenshot2.png)
 

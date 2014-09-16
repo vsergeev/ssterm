@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 
 # ssterm - simple serial-port terminal
-# Version 1.8 - September 2014
+# Version 2.0 - September 2014
 # Vanya A. Sergeev - <vsergeev@gmail.com>
 # https://github.com/vsergeev/ssterm
 #
@@ -557,7 +557,7 @@ def read_write_loop(serial_fd, stdin_fd, stdout_fd):
 def print_usage():
     print "Usage: %s [options] <serial port device>\n" % sys.argv[0]
     print "\
-ssterm - simple serial-port terminal v1.8\n\
+ssterm - simple serial-port terminal v2.0\n\
 Vanya A. Sergeev - <vsergeev@gmail.com>\n\
 https://github.com/vsergeev/ssterm\n\
 \n\
@@ -606,7 +606,7 @@ Default Options:\n\
  input mode: raw  | tx newline: raw | local echo: off"
 
 def print_version():
-    print "ssterm version 1.8 - 09/13/2014"
+    print "ssterm version 2.0 - 09/16/2014"
 
 if __name__ == '__main__':
     # Parse options
