@@ -21,7 +21,7 @@ under both CPython and pypy implementations of Python. Feel free to send any
 issues, ideas, or suggestions to vsergeev at gmail or the [GitHub issues
 page](https://github.com/vsergeev/ssterm/issues/).
 
-## USAGE
+## Usage
 
     Usage: /usr/bin/ssterm [options] <serial port device>
     
@@ -73,10 +73,6 @@ page](https://github.com/vsergeev/ssterm/issues/).
      baudrate: 115200 | databits: 8 | parity: none | stopbits: 1 | flowctrl: none
      output mode: raw | rx newline: raw | color code: off
      input mode: raw  | tx newline: raw | local echo: off
-
-## LICENSE
-
-ssterm is MIT licensed. See the provided `LICENSE` file.
 
 ## USING ssterm
 
@@ -227,4 +223,8 @@ Hexadecimal with newline interpretation output mode and character color coding:
     $ ssterm -o hexnl -c $,0x0a,0x0d /dev/ttyUSB0
 
 ![](misc/screenshot2.png)
+
+## LICENSE
+
+ssterm is MIT licensed. See the provided `LICENSE` file.
 
