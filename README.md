@@ -1,4 +1,4 @@
-## ABOUT ssterm
+# ssterm v2.0
 
 ssterm is a simple console-based serial port terminal. It features painless
 serial port configuration, no dependencies outside of a standard Python 2
