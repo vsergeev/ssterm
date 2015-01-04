@@ -555,55 +555,53 @@ def read_write_loop(serial_fd, stdin_fd, stdout_fd):
 ###############################################################################
 
 def print_usage():
-    print "Usage: %s [options] <serial port device>\n" % sys.argv[0]
-    print "\
-ssterm - simple serial-port terminal v2.0\n\
-Vanya A. Sergeev - <vsergeev@gmail.com>\n\
-https://github.com/vsergeev/ssterm\n\
-\n\
-Serial Port Options:\n\
-  -b, --baudrate <rate>         Specify baudrate (e.g. 9600, 115200, etc.)\n\
-  -d, --databits <number>       Specify number of data bits [5,6,7,8]\n\
-  -p, --parity <type>           Specify parity [none, odd, even]\n\
-  -t, --stopbits <number>       Specify number of stop bits [1,2]\n\
-  -f, --flow-control <type>     Specify flow control [none, rtscts, xonxoff]\n\
-\n\
-Output Formatting Options:\n\
-  -o, --output <mode>           Specify output mode\n\
-                                  raw       raw (default)\n\
-                                  split     hex./ASCII split\n\
-                                  splitfull hex./ASCII split with full lines\n\
-                                  hex       hex.\n\
-                                  hexnl     hex. with newlines\n\
-\n\
-  --rx-nl <substitution>        Enable substitution of the specified newline\n\
-                                for the system's newline upon reception\n\
-                                  [cr, lf, crlf, crorlf]\n\
-\n\
-  -c, --color <list>            Specify comma-delimited list of characters in\n\
-                                ASCII or hex. to color code: A,$,0x0d,0x0a,...\n\
-\n\
-Input Formatting Options:\n\
-  -i, --input <mode>            Specify input mode\n\
-                                  raw       raw (default)\n\
-                                  hex       hex. interpretation\n\
-\n\
-  --tx-nl <substitution>        Enable substitution of the system's newline\n\
-                                for the specified newline upon transmission\n\
-                                  [none, cr, lf, crlf]\n\
-\n\
-  -e, --echo                    Enable local character echo\n\
-\n\
-Miscellaneous:\n\
-  -h, --help                    Display this usage/help\n\
-  -v, --version                 Display the program's version\n\n"
-    print "\
-Quit Escape Character:          Ctrl-]\n\
-\n\
-Default Options:\n\
- baudrate: 115200 | databits: 8 | parity: none | stopbits: 1 | flowctrl: none\n\
- output mode: raw | rx newline: raw | color code: off\n\
- input mode: raw  | tx newline: raw | local echo: off"
+    print "Usage: %s [options] <serial port device>\n"\
+          "ssterm - simple serial-port terminal v2.0\n"\
+          "Vanya A. Sergeev - <vsergeev@gmail.com>\n"\
+          "https://github.com/vsergeev/ssterm\n"\
+          "\n"\
+          "Serial Port Options:\n"\
+          "  -b, --baudrate <rate>         Specify baudrate (e.g. 9600, 115200, etc.)\n"\
+          "  -d, --databits <number>       Specify number of data bits [5,6,7,8]\n"\
+          "  -p, --parity <type>           Specify parity [none, odd, even]\n"\
+          "  -t, --stopbits <number>       Specify number of stop bits [1,2]\n"\
+          "  -f, --flow-control <type>     Specify flow control [none, rtscts, xonxoff]\n"\
+          "\n"\
+          "Output Formatting Options:\n"\
+          "  -o, --output <mode>           Specify output mode\n"\
+          "                                  raw       raw (default)\n"\
+          "                                  split     hex./ASCII split\n"\
+          "                                  splitfull hex./ASCII split with full lines\n"\
+          "                                  hex       hex.\n"\
+          "                                  hexnl     hex. with newlines\n"\
+          "\n"\
+          "  --rx-nl <substitution>        Enable substitution of the specified newline\n"\
+          "                                for the system's newline upon reception\n"\
+          "                                  [cr, lf, crlf, crorlf]\n"\
+          "\n"\
+          "  -c, --color <list>            Specify comma-delimited list of characters in\n"\
+          "                                ASCII or hex. to color code: A,$,0x0d,0x0a,...\n"\
+          "\n"\
+          "Input Formatting Options:\n"\
+          "  -i, --input <mode>            Specify input mode\n"\
+          "                                  raw       raw (default)\n"\
+          "                                  hex       hex. interpretation\n"\
+          "\n"\
+          "  --tx-nl <substitution>        Enable substitution of the system's newline\n"\
+          "                                for the specified newline upon transmission\n"\
+          "                                  [none, cr, lf, crlf]\n"\
+          "\n"\
+          "  -e, --echo                    Enable local character echo\n"\
+          "\n"\
+          "Miscellaneous:\n"\
+          "  -h, --help                    Display this usage/help\n"\
+          "  -v, --version                 Display the program's version\n\n"\
+          "Quit Escape Character:          Ctrl-]\n"\
+          "\n"\
+          "Default Options:\n"\
+          " baudrate: 115200 | databits: 8 | parity: none | stopbits: 1 | flowctrl: none\n"\
+          " output mode: raw | rx newline: raw | color code: off\n"\
+          " input mode: raw  | tx newline: raw | local echo: off" % sys.argv[0]
 
 def print_version():
     print "ssterm version 2.0 - 09/16/2014"
