@@ -5,7 +5,7 @@ except ImportError:
 
 setup(
     name='ssterm',
-    version='2.0',
+    version='3.0.0',
     description='A simple console-based serial port terminal',
     author='vsergeev',
     author_email='v@sergeev.io',

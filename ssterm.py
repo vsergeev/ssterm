@@ -634,7 +634,7 @@ def print_usage():
           " input mode: raw  | tx newline: raw | local echo: off" % sys.argv[0])
 
 def print_version():
-    print("ssterm version 2.0 - 09/16/2014")
+    print("ssterm version 3.0.0")
 
 def main():
     # Parse options
