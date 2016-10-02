@@ -1,91 +1,99 @@
 # ssterm [![Build Status](https://travis-ci.org/vsergeev/ssterm.svg?branch=master)](https://travis-ci.org/vsergeev/ssterm) [![GitHub release](https://img.shields.io/github/release/vsergeev/ssterm.svg?maxAge=7200)](https://github.com/vsergeev/ssterm) [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/vsergeev/ssterm/blob/master/LICENSE)
 
-ssterm is a simple console-based serial port terminal. It features painless
-serial port configuration, no dependencies outside of a standard Python 2
-installation, and a variety of useful formatting features:
+ssterm is a simple console-based serial port terminal featuring painless serial
+port configuration, no dependencies outside of a standard Python 2 or 3
+installation, and a variety of useful formatting options:
 
-  * output modes
-    * raw
-    * hexadecimal
-    * hexadecimal/ASCII split
-  * input modes
-    * raw
-    * hexadecimal
-  * transmit newline remapping (e.g. system newline -> CRLF)
-  * receive newline remapping (e.g. CRLF -> system newline)
-  * character color coding
-  * local character echo
+* output modes
+  * raw
+  * hexadecimal
+  * hexadecimal/ASCII split
+* input modes
+  * raw
+  * hexadecimal
+* transmit newline remapping (e.g. system newline -> CRLF)
+* receive newline remapping (e.g. CRLF -> system newline)
+* character color coding
+* local character echo
 
-ssterm is written in Python 2, and should work on most *nix platforms. It runs
-under both CPython and pypy implementations of Python. Feel free to send any
-issues, ideas, or suggestions to vsergeev at gmail or the [GitHub issues
-page](https://github.com/vsergeev/ssterm/issues/).
+## Installation
+
+With pip:
+
+```
+pip install ssterm
+```
+
+With file:
+
+```
+wget https://github.com/vsergeev/ssterm/raw/master/ssterm.py -O ssterm
+chmod +x ssterm
+```
 
 ## Usage
 
-    Usage: /usr/bin/ssterm [options] <serial port device>
-    
-    ssterm - simple serial-port terminal v2.0
-    Vanya A. Sergeev - <vsergeev@gmail.com>
-    https://github.com/vsergeev/ssterm
-    
-    Serial Port Options:
-      -b, --baudrate <rate>         Specify baudrate (e.g. 9600, 115200, etc.)
-      -d, --databits <number>       Specify number of data bits [5,6,7,8]
-      -p, --parity <type>           Specify parity [none, odd, even]
-      -t, --stopbits <number>       Specify number of stop bits [1,2]
-      -f, --flow-control <type>     Specify flow control [none, rtscts, xonxoff]
-    
-    Output Formatting Options:
-      -o, --output <mode>           Specify output mode
-                                      raw       raw (default)
-                                      split     hex./ASCII split
-                                      splitfull hex./ASCII split with full lines
-                                      hex       hex.
-                                      hexnl     hex. with newlines
-    
-      --rx-nl <substitution>        Enable substitution of the specified newline
-                                    for the system's newline upon reception
-                                      [cr, lf, crlf, crorlf]
-    
-      -c, --color <list>            Specify comma-delimited list of characters in
-                                    ASCII or hex. to color code: A,$,0x0d,0x0a,...
-    
-    Input Formatting Options:
-      -i, --input <mode>            Specify input mode
-                                      raw       raw (default)
-                                      hex       hex. interpretation
-    
-      --tx-nl <substitution>        Enable substitution of the system's newline
-                                    for the specified newline upon transmission
-                                      [none, cr, lf, crlf]
-    
-      -e, --echo                    Enable local character echo
-    
-    Miscellaneous:
-      -h, --help                    Display this usage/help
-      -v, --version                 Display the program's version
-    
-    
-    Quit Escape Character:          Ctrl-]
-    
-    Default Options:
-     baudrate: 115200 | databits: 8 | parity: none | stopbits: 1 | flowctrl: none
-     output mode: raw | rx newline: raw | color code: off
-     input mode: raw  | tx newline: raw | local echo: off
+```
+Usage: ./ssterm [options] <serial port device>
 
-## USING ssterm
+ssterm - simple serial-port terminal
+https://github.com/vsergeev/ssterm
 
-`Ctrl-]` is ssterm's quit escape character.
+Serial Port Options:
+  -b, --baudrate <rate>         Specify baudrate: e.g. 9600, 115200, etc.
+  -d, --databits <number>       Specify number of data bits: 5, 6, 7, 8
+  -p, --parity <type>           Specify parity: none, odd, even
+  -t, --stopbits <number>       Specify number of stop bits: 1, 2
+  -f, --flow-control <type>     Specify flow control: none, rtscts, xonxoff
 
-### Serial Port Options
+Output Formatting Options:
+  -o, --output <mode>           Specify output mode
+                                  raw       raw (default)
+                                  split     hex./ASCII split
+                                  splitfull hex./ASCII split with full lines
+                                  hex       hex.
+                                  hexnl     hex. with newlines
 
-By default, ssterm opens the specified serial port with 115200 baudrate, 8 data
-bits, no parity, 1 stop bit, and no flow control. These serial port settings
-can be configured with the `-b, --baudrate`, `-d, --databits`, `-p, --parity`,
-`-t, --stopbits`, and `-f, --flow-control` options.
+  --rx-nl <substitution>        Enable substitution of the specified newline
+                                for the system's newline upon reception
+                                  cr, lf, crlf, crorlf
 
-### Output Formatting Options
+  -c, --color <list>            Specify comma-delimited list of characters in
+                                ASCII or hex. to color code: A,$,0x0d,0x0a,...
+
+Input Formatting Options:
+  -i, --input <mode>            Specify input mode
+                                  raw       raw (default)
+                                  hex       hex. interpretation
+
+  --tx-nl <substitution>        Enable substitution of the system's newline
+                                for the specified newline upon transmission
+                                  none, cr, lf, crlf
+
+  -e, --echo                    Enable local character echo
+
+Miscellaneous:
+  -h, --help                    Display this usage/help
+  -v, --version                 Display the program's version
+
+Quit Escape Character:          Ctrl-]
+
+Default Options:
+ baudrate: 115200 | databits: 8 | parity: none | stopbits: 1 | flowctrl: none
+ output mode: raw | rx newline: raw | color code: none
+ input mode: raw  | tx newline: raw | local echo: off
+```
+
+#### Defaults
+
+ssterm opens the specified serial port with the default settings of 115200
+baudrate, 8 data bits, no parity, 1 stop bit, and no flow control. These serial
+port settings can be configured with the `-b, --baudrate`, `-d, --databits`,
+`-p, --parity`, `-t, --stopbits`, and `-f, --flow-control` options.
+
+Ctrl-] is ssterm's quit escape character.
+
+#### Output Options
 
 The `-o, --output` option selects the output mode. In the default `raw` output
 mode, received characters are written directly to standard output. In `hex`
@@ -110,7 +118,7 @@ colors are assigned sequentially to the specified characters, in the order of:
 (Foreground/Background) Black/Red, Black/Green, Black/Yellow, White/Blue,
 White/Magenta, Black/Cyan, Black/White.
 
-### Input Formatting Options
+#### Input Options
 
 The `-i, --input` option selects the input mode. In the default `raw` input
 mode, all input characters and control signals are written directly to the
@@ -158,7 +166,7 @@ newline on reception:
 
     $ ssterm --tx-nl crlf --rx-nl crlf /dev/ttyUSB0
 
-Normal output mode:
+Raw output mode:
 
     $ ssterm /dev/ttyUSB0
     $GPGGA,082830.821,,,,,0,00,,,M,0.0,M,,0000*5C
@@ -226,5 +234,5 @@ Hexadecimal with newline interpretation output mode and character color coding:
 
 ## LICENSE
 
-ssterm is MIT licensed. See the provided `LICENSE` file.
+ssterm is MIT licensed. See the included `LICENSE` file.
 
