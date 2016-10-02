@@ -1,11 +1,9 @@
 #!/usr/bin/env python
 
 # ssterm - simple serial-port terminal
-# Version 2.0 - September 2014
-# Vanya A. Sergeev - <vsergeev@gmail.com>
 # https://github.com/vsergeev/ssterm
 #
-# Copyright (c) 2014 Ivan (Vanya) A. Sergeev
+# Copyright (c) 2014-2016 Ivan (Vanya) A. Sergeev
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
