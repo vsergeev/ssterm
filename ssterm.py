@@ -636,7 +636,7 @@ def print_usage():
 def print_version():
     print("ssterm version 2.0 - 09/16/2014")
 
-if __name__ == '__main__':
+def main():
     # Parse options
     try:
         options, args = getopt.gnu_getopt(sys.argv[1:], "b:d:p:t:f:o:c:i:ehv", ["baudrate=", "databits=", "parity=", "stopbits=", "flow-control=", "output=", "color=", "rx-nl=", "input=", "tx-nl=", "echo", "help", "version"])
@@ -778,3 +778,6 @@ if __name__ == '__main__':
     except Exception as err:
         sys.stderr.write("Error closing serial port: %s\n" % str(err))
         sys.exit(-1)
+
+if __name__ == '__main__':
+    main()
