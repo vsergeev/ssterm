@@ -1,2 +1,6 @@
 *.pyc
+MANIFEST
+build/
+dist/
+*.egg-info/
 misc/pts_shunt
