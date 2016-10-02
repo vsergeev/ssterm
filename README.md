@@ -1,4 +1,4 @@
-# ssterm v2.0
+# ssterm [![Build Status](https://travis-ci.org/vsergeev/ssterm.svg?branch=master)](https://travis-ci.org/vsergeev/ssterm) [![GitHub release](https://img.shields.io/github/release/vsergeev/ssterm.svg?maxAge=7200)](https://github.com/vsergeev/ssterm) [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/vsergeev/ssterm/blob/master/LICENSE)
 
 ssterm is a simple console-based serial port terminal. It features painless
 serial port configuration, no dependencies outside of a standard Python 2
