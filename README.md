@@ -15,6 +15,7 @@ installation, and a variety of useful formatting options:
 * receive newline remapping (e.g. CRLF -> system newline)
 * character color coding
 * local character echo
+* output newline timestamp
 
 ## Installation
 
@@ -60,6 +61,12 @@ Output Formatting Options:
 
   -c, --color <list>            Specify comma-delimited list of characters in
                                 ASCII or hex. to color code: A,$,0x0d,0x0a,...
+                                
+  -m, --timestamp <precision>   Specify precision of timestamp for new lines
+                                  n         none (default)
+                                  s         seconds 
+                                  m         milliseconds
+                                  u         microseconds                                  
 
 Input Formatting Options:
   -i, --input <mode>            Specify input mode
@@ -117,6 +124,10 @@ as well as hexadecimal bytes (e.g. `0x0a,0xff,...`). Up to seven distinct
 colors are assigned sequentially to the specified characters, in the order of:
 (Foreground/Background) Black/Red, Black/Green, Black/Yellow, White/Blue,
 White/Magenta, Black/Cyan, Black/White.
+
+The `-m, --timestamp` option enables adding system time for new lines received
+from serial port. For example, `-m m` will add time with precision milliseconds 
+on a newline at the moment when new data is received after a line break.
 
 #### Input Options
 

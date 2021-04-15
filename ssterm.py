@@ -31,6 +31,7 @@ import select
 import getopt
 import string
 import termios
+import datetime
 
 ###############################################################################
 ### Default Options
@@ -53,6 +54,7 @@ Format_Options = {
     'receive_newline': "raw",   # 'cr', 'crlf', 'lf', 'crorlf'
     'echo': False,
     'color_chars': b'',         # e.g. b"\nA"
+    'timestamp': 'none',        # s=seconds, m=milli, u=micro
 }
 
 ###############################################################################
@@ -75,7 +77,8 @@ Color_Codes = [ b"\x1b[1;30;41m", b"\x1b[1;30;42m", b"\x1b[1;30;43m",
 Color_Code_Reset = b"\x1b[0m"
 
 # Read buffer size
-READ_BUF_SIZE = 4096
+READ_BUF_MIN_SIZE = 1
+READ_BUF_MAX_SIZE = 4096
 
 # Newline Substitution tables
 RX_Newline_Sub = {'raw': None, 'cr': b"\r", 'crlf': b"\r\n", 'lf': b"\n", 'crorlf': b"\r|\n"}
@@ -182,6 +185,10 @@ def serial_open(device_path, baudrate, databits, stopbits, parity, flow_control)
     # Enable XON/XOFF if we are using software flow control
     if flow_control == "xonxoff":
         tty_attr[0] |= (termios.IXON | termios.IXOFF | termios.IXANY)
+
+    # Enable 'blocking read'
+    tty_attr[6][termios.VTIME] = b'\x00'
+    tty_attr[6][termios.VMIN] = b'\x01'
 
     # Set new termios attributes
     try:
@@ -337,6 +344,61 @@ def output_processor_newline(sub):
         if len(buf) > 0 and buf[-1] == sub[0]:
             state[0] = buf[-1:]
             buf = buf[:-1]
+
+        return buf
+    return f
+
+def output_processor_timestamp(form):
+    # Convert constants to byte strings
+    linesep = os.linesep.encode()
+
+    # State to print a timestamp for the first line
+    first_line = [True]
+
+    # State to keep track of cut-off newline sequences
+    state = [b""]
+
+    # format current time with precision: seconds
+    def time_only():
+        return datetime.datetime.now().strftime("%H:%M:%S")
+
+    # format current time with precision: milliseconds
+    def time_with_milliseconds():
+        now = datetime.datetime.now()
+        return "{}.{:03}".format(now.strftime("%H:%M:%S"), now.microsecond // 1000)
+
+    # format current time with precision: microseconds
+    def time_with_microseconds():
+        return datetime.datetime.now().time()
+
+    # select timestamp handler
+    take_time = time_with_microseconds
+    if form == "s":
+        take_time = time_only
+    elif form == "m":
+        take_time = time_with_milliseconds
+
+    # Add a timestamp to a newline
+    def f(buf):
+        # Append our left-over newline character match from before
+        buf = state[0] + buf
+        state[0] = b""
+
+        # If the last character is a part of a match, chop it off and save it
+        # for later
+        if len(buf) > 0 and buf[-1] == linesep[0]:
+            state[0] = buf[-1:]
+            buf = buf[:-1]
+
+        if ~buf.find(linesep):
+            # Find and add a timestamp after linebreak if has any character
+            time = "{}[{}] ".format(linesep.decode(), take_time()).encode()
+            buf = re.sub(linesep, time, buf)
+
+        # Print timestamp for the firs line
+        if first_line[0]:
+            first_line[0] = False
+            buf = "[{}] ".format(take_time()).encode() + buf
 
         return buf
     return f
@@ -513,9 +575,15 @@ def read_write_loop(serial_fd, stdin_fd, stdout_fd):
 
     ### Prepare our output pipeline
     output_pipeline = []
+    serial_buf_size = READ_BUF_MAX_SIZE
     # Receive newline substitution
     if RX_Newline_Sub[Format_Options['receive_newline']] is not None:
         output_pipeline.append(output_processor_newline(RX_Newline_Sub[Format_Options['receive_newline']]))
+    # Timestamp mode
+    if Format_Options['timestamp'] != 'none':
+        output_pipeline.append(output_processor_timestamp(Format_Options['timestamp']))
+        # small size for higher data sampling accuracy
+        serial_buf_size = READ_BUF_MIN_SIZE
     # Raw mode
     if Format_Options['output_mode'] == 'raw':
         output_pipeline.append(output_processor_raw(Format_Options['color_chars']))
@@ -541,7 +609,7 @@ def read_write_loop(serial_fd, stdin_fd, stdout_fd):
         if stdin_fd in ready_read_fds:
             # Read a buffer from stdin
             try:
-                buf = os.read(stdin_fd, READ_BUF_SIZE)
+                buf = os.read(stdin_fd, READ_BUF_MAX_SIZE)
             except Exception as err:
                 raise Exception("Error reading stdin: %s\n" % str(err))
 
@@ -562,7 +630,7 @@ def read_write_loop(serial_fd, stdin_fd, stdout_fd):
         if serial_fd in ready_read_fds:
             # Read a buffer from the serial port
             try:
-                buf = os.read(serial_fd, READ_BUF_SIZE)
+                buf = os.read(serial_fd, serial_buf_size)
             except Exception as err:
                 raise Exception("Error reading serial port: %s\n" % str(err))
 
@@ -612,6 +680,12 @@ def print_usage():
           "  -c, --color <list>            Specify comma-delimited list of characters in\n"\
           "                                ASCII or hex. to color code: A,$,0x0d,0x0a,...\n"\
           "\n"\
+          "  -m, --timestamp <precision>   Specify precision of timestamp for new lines\n"\
+          "                                  n         none (default)\n"\
+          "                                  s         seconds\n"\
+          "                                  m         milliseconds\n"\
+          "                                  u         microseconds\n"\
+          "\n"\
           "Input Formatting Options:\n"\
           "  -i, --input <mode>            Specify input mode\n"\
           "                                  raw       raw (default)\n"\
@@ -639,7 +713,10 @@ def print_version():
 def main():
     # Parse options
     try:
-        options, args = getopt.gnu_getopt(sys.argv[1:], "b:d:p:t:f:o:c:i:ehv", ["baudrate=", "databits=", "parity=", "stopbits=", "flow-control=", "output=", "color=", "rx-nl=", "input=", "tx-nl=", "echo", "help", "version"])
+        options, args = getopt.gnu_getopt(sys.argv[1:], "b:d:p:t:f:o:c:m:i:ehv",
+                                          ["baudrate=", "databits=", "parity=", "stopbits=", "flow-control=",
+                                           "output=", "color=", "timestamp=", "rx-nl=", "input=", "tx-nl=", "echo",
+                                           "help", "version"])
     except getopt.GetoptError as err:
         print(str(err), "\n")
         print_usage()
@@ -678,6 +755,13 @@ def main():
                 print_usage()
                 sys.exit(-1)
             Format_Options['output_mode'] = opt_arg
+        elif opt in ("-m", "--timestamp"):
+            # seconds, milliseconds, microseconds
+            if not opt_arg in ["s", "m", "u"]:
+                sys.stderr.write("Error: Invalid timestamp format!\n")
+                print_usage()
+                sys.exit(-1)
+            Format_Options['timestamp'] = opt_arg
         elif opt == "--tx-nl":
             if not opt_arg in TX_Newline_Sub:
                 sys.stderr.write("Error: Invalid tx newline substitution!\n")
