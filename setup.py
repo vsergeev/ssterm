@@ -33,6 +33,7 @@ setup(
     "- transmit newline remapping (e.g. system newline -> CRLF)\n"
     "- receive newline remapping (e.g. CRLF -> system newline)\n"
     "- character color coding\n"
+    "- output newline timestamp\n"
     "- local character echo\n",
     classifiers=[
         "Development Status :: 5 - Production/Stable",
